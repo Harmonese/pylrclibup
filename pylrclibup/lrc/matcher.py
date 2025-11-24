@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from ..config import AppConfig
 from ..model import TrackMeta
 from .parser import normalize_name
 
@@ -76,12 +77,12 @@ def parse_lrc_filename(path: Path) -> Tuple[List[str], str]:
 
 def find_lrc_for_track(
     meta: TrackMeta,
-    base_dir: Path,
+    config: AppConfig,
     *,
     interactive: bool = True,
 ) -> Optional[Path]:
     """
-    在 base_dir 下递归寻找和某首歌曲匹配的 LRC 文件。
+    在 config.lrc_dir 下递归寻找和某首歌曲匹配的 LRC 文件。
 
     匹配规则：
       1. 从 MP3 的 meta.track / meta.artist 获取歌名和艺人
@@ -99,7 +100,7 @@ def find_lrc_for_track(
 
     candidates: List[Path] = []
 
-    for p in base_dir.rglob("*.lrc"):
+    for p in config.lrc_dir.rglob("*.lrc"):
         lrc_artists, lrc_title_norm = parse_lrc_filename(p)
         if not lrc_title_norm:
             continue
@@ -131,3 +132,4 @@ def find_lrc_for_track(
             if 1 <= i <= len(candidates):
                 return candidates[i - 1]
         print("输入无效，请重新输入。")
+

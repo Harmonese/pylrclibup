@@ -1,7 +1,0 @@
-DIR: pylrclibup
-DIR: pylrclibup/processor
-DIR: pylrclibup/cli
-DIR: pylrclibup/lrc
-DIR: pylrclibup/model
-DIR: pylrclibup/api
-DIR: pylrclibup/fs

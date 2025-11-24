@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylrclibup"
-version = "0.1.0"
+version = "0.2.0"
 description = "A robust Python CLI tool for uploading lyrics or instrumental tags to LRCLIB."
 readme = "README.md"
 authors = [

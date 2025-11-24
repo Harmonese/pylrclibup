@@ -49,6 +49,8 @@ class AppConfig:
 
     lrclib_base: str = LRCLIB_BASE
 
+    pair_lrc_with_track_dir: bool = False
+
     @classmethod
     def from_env_and_defaults(
         cls,
@@ -60,6 +62,7 @@ class AppConfig:
         preview_lines: Optional[int] = None,
         max_http_retries: Optional[int] = None,
         user_agent: Optional[str] = None,
+        pair_lrc_with_track_dir: bool = False,
     ) -> "AppConfig":
         """
         统一入口：综合考虑
@@ -132,4 +135,5 @@ class AppConfig:
             preview_lines=preview_lines_val,
             max_http_retries=max_http_retries_val,
             user_agent=ua,
+            pair_lrc_with_track_dir=pair_lrc_with_track_dir,
         )

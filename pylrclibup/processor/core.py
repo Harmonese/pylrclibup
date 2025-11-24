@@ -42,7 +42,6 @@ def _preview(label: str, text: str, max_lines: int) -> None:
 
 # -------------------- 文件移动 & 清理 --------------------
 
-
 def _move_after_done(
     config: AppConfig,
     meta: TrackMeta,
@@ -53,11 +52,32 @@ def _move_after_done(
       - /api/get-cached 已有歌词
       - 上传成功（外部歌词 / 本地 LRC / 纯音乐）
 
-    规则：
-      - MP3 一定移动到 done_tracks_dir
-      - LRC 如存在则移动到 done_lrc_dir
-      - 移动后清理 tracks_dir 与 lrc_dir 下的空目录
+    普通模式（pair_lrc_with_track_dir=False）：
+      - MP3 → done_tracks_dir
+      - LRC → done_lrc_dir
+      - 清理 tracks_dir / lrc_dir 下的空目录
+
+    -d 模式（pair_lrc_with_track_dir=True）：
+      - MP3 保持原地不动
+      - LRC（如果存在）移动到 MP3 所在目录
+      - 不清理目录（避免误删）
     """
+
+    # ⭐ -d 模式：LRC 跟随歌曲目录，歌曲不动
+    if config.pair_lrc_with_track_dir:
+        target_dir = meta.path.parent
+
+        if lrc_path and lrc_path.exists():
+            new_lrc = move_with_dedup(lrc_path, target_dir)
+            if new_lrc:
+                _log_info(f"[pair-mode] LRC 已移动到歌曲目录：{new_lrc}")
+        else:
+            _log_info("[pair-mode] 没有 LRC 可移动。")
+
+        # 歌曲文件不动，目录也不清理
+        return
+
+    # ⭐ 普通模式：沿用原来的逻辑
     if lrc_path and lrc_path.exists():
         new_lrc = move_with_dedup(lrc_path, config.done_lrc_dir)
         if new_lrc:
@@ -101,7 +121,7 @@ def process_track(
         _preview("已有 plainLyrics", cached.plain, config.preview_lines)
         _preview("已有 syncedLyrics", cached.synced, config.preview_lines)
 
-        lrc_path = find_lrc_for_track(meta, config.lrc_dir, interactive=True)
+        lrc_path = find_lrc_for_track(meta, config, interactive=True)
         _move_after_done(config, meta, lrc_path)
         return
 
@@ -141,7 +161,7 @@ def process_track(
 
             if ok:
                 _log_info("外部歌词上传完成 ✓")
-                lrc_path = find_lrc_for_track(meta, config.lrc_dir, interactive=True)
+                lrc_path = find_lrc_for_track(meta, config, interactive=True)
                 _move_after_done(config, meta, lrc_path)
             else:
                 _log_error("外部歌词上传失败 ×")
@@ -150,7 +170,7 @@ def process_track(
             _log_info("用户选择不直接使用外部歌词 → 继续尝试本地 LRC。")
 
     # 3. 查找本地 LRC 文件
-    lrc_path = find_lrc_for_track(meta, config.lrc_dir, interactive=True)
+    lrc_path = find_lrc_for_track(meta, config, interactive=True)
     if not lrc_path:
         _log_warn(f"⚠ 未找到本地 LRC 文件：{meta.track}")
         if dry_run:
@@ -280,58 +300,3 @@ def process_all(
 
     _log_info("全部完成。")
 
-def move_lrc_to_track_dirs(tracks_root: Path, lrc_root: Path) -> None:
-    """
-    “默认本地整理模式”（-d）：
-
-    - 不访问 LRCLIB
-    - 只做本地 mp3 ↔ lrc 匹配
-    - 歌曲文件原地不动
-    - 匹配到的 LRC 在用户确认后移动到对应歌曲所在目录
-
-    参数：
-      tracks_root: 歌曲根目录（递归扫描其中所有 .mp3）
-      lrc_root   : 歌词根目录（递归扫描其中所有 .lrc，并参与匹配）
-    """
-    _log_info(f"默认匹配模式：歌曲根目录 = {tracks_root}, LRC 根目录 = {lrc_root}")
-
-    if not tracks_root.is_dir():
-        _log_error(f"歌曲目录不存在：{tracks_root}")
-        return
-    if not lrc_root.is_dir():
-        _log_error(f"LRC 目录不存在：{lrc_root}")
-        return
-
-    mp3_paths = sorted(tracks_root.rglob("*.mp3"))
-    if not mp3_paths:
-        _log_warn("在指定歌曲目录下没有找到任何 .mp3 文件。")
-        return
-
-    for mp3 in mp3_paths:
-        meta = TrackMeta.from_mp3(mp3)
-        if not meta:
-            continue
-
-        _log_info(f"处理：{meta}")
-
-        lrc_path = find_lrc_for_track(meta, lrc_root, interactive=True)
-        if not lrc_path:
-            _log_warn("未找到匹配的 LRC 文件，跳过。")
-            print()
-            continue
-
-        _log_info(f"匹配到 LRC：{lrc_path}")
-        target_dir = meta.path.parent
-        prompt = f"是否将此 LRC 移动到歌曲目录 {target_dir}? [y/N]: "
-        choice = input(prompt).strip().lower()
-        if choice not in ("y", "yes"):
-            _log_info("用户取消移动。")
-            print()
-            continue
-
-        new_lrc = move_with_dedup(lrc_path, target_dir)
-        if new_lrc:
-            _log_info(f"LRC 已移动到：{new_lrc}")
-        print()
-
-    _log_info("默认匹配模式完成。")
