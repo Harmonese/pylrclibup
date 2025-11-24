@@ -1,21 +1,64 @@
-# macOS system files
+# ------------------------------
+# OS / Editor / Misc
+# ------------------------------
 .DS_Store
+Thumbs.db
 
-# Python venv
-.venv/
-venv/
-env/
+# VSCode / JetBrains
+.vscode/
+.idea/
 
-# Byte-compiled files
+# ------------------------------
+# Python cache and compiled files
+# ------------------------------
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# LRC importer working dirs
-done-lrc-files/
-done-tracks/
+# C extensions
+*.so
 
-# Do not commit actual music or lyrics
-tracks/
+# ------------------------------
+# Virtual environments
+# ------------------------------
+.venv/
+env/
+venv/
+ENV/
+*.venv/
+
+# ------------------------------
+# Build / Install Artifacts
+# ------------------------------
+# setuptools build directories
+build/
+dist/
+*.egg-info/
+*.egg
+
+# PyInstaller
+*.spec
+
+# pip wheel builds
+pip-wheel-metadata/
+
+# ------------------------------
+# Project-specific ignores
+# ------------------------------
+
+# Local test environment (test_env/)
+test_env/
+
+# folders
+done-tracks/
+done-lrc-files/
 lrc-files/
+tracks/
+
+# ------------------------------
+# Logs / temp files
+# ------------------------------
+*.log
+*.tmp
+*~
