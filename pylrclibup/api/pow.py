@@ -1,0 +1,29 @@
+from __future__ import annotations
+
+import hashlib
+
+from ..exceptions import PoWError
+
+
+def solve_pow(prefix: str, target_hex: str) -> str:
+    """
+    按官方说明 + LRCGET 的实现习惯：
+
+    - target 是 16 进制字符串，表示一个 256 位整数阈值
+    - 在 nonce 为 0,1,2,... 中寻找第一个满足：
+        sha256(prefix + str(nonce)) <= target
+    - 返回 nonce 的十进制字符串
+    """
+    if not prefix or not target_hex:
+        raise PoWError(f"无效 PoW 参数：prefix={prefix!r}, target={target_hex!r}")
+
+    target = int(target_hex, 16)
+
+    nonce = 0
+    while True:
+        token_bytes = (prefix + str(nonce)).encode("utf-8")
+        digest = hashlib.sha256(token_bytes).hexdigest()
+        if int(digest, 16) <= target:
+            print(f"[INFO] Found nonce: {nonce}")
+            return str(nonce)
+        nonce += 1

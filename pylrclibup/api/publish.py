@@ -1,0 +1,205 @@
+from __future__ import annotations
+
+import time
+from typing import Optional, Dict, Any
+
+import requests
+from requests import RequestException
+
+from ..config import AppConfig
+from ..exceptions import PublishTokenError
+from ..model import TrackMeta
+from .http import http_request_json
+from .pow import solve_pow
+
+
+def _log_info(msg: str) -> None:
+    print(f"[INFO] {msg}")
+
+
+def _log_warn(msg: str) -> None:
+    print(f"[WARN] {msg}")
+
+
+def _log_error(msg: str) -> None:
+    print(f"[ERROR] {msg}")
+
+
+# -------------------- Publish Token / PoW --------------------
+
+
+def request_publish_token(config: AppConfig) -> Optional[str]:
+    """
+    调用 /api/request-challenge，执行 PoW，返回完整的
+      X-Publish-Token = "{prefix}:{nonce}"
+    """
+    url = f"{config.lrclib_base}/request-challenge"
+    data = http_request_json(
+        config,
+        "POST",
+        url,
+        "请求发布令牌 (/api/request-challenge)",
+        treat_404_as_none=False,
+    )
+    if not data:
+        return None
+
+    prefix = data.get("prefix")
+    target = data.get("target")
+    if not prefix or not target:
+        _log_error(f"请求发布令牌返回异常数据：{data}")
+        return None
+
+    try:
+        nonce = solve_pow(prefix, target)
+    except Exception as e:
+        _log_error(f"PoW 求解失败：{e}")
+        return None
+
+    return f"{prefix}:{nonce}"
+
+
+# -------------------- Publish with retry --------------------
+
+
+def publish_with_retry(
+    config: AppConfig,
+    meta: TrackMeta,
+    payload: Dict[str, Any],
+    label: str,
+) -> bool:
+    """
+    对 /api/publish 做一层自动重试：
+      - 每次重试都会重新请求 challenge + 重新 PoW
+      - 成功（201）即返回 True
+      - 4xx 认为是参数或 Token 问题，不重试
+    """
+    url = f"{config.lrclib_base}/publish"
+    retries = config.max_http_retries
+
+    for attempt in range(1, retries + 1):
+        token = request_publish_token(config)
+        if not token:
+            _log_warn(
+                f"{label}：获取发布令牌失败（第 {attempt}/{retries} 次自动重试）"
+            )
+            if attempt == retries:
+                return False
+            time.sleep(1)
+            continue
+
+        headers = {
+            "X-Publish-Token": token,
+            "Content-Type": "application/json",
+            "User-Agent": config.user_agent,
+        }
+
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+        except RequestException as e:
+            _log_warn(
+                f"{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次自动重试）: {e}"
+            )
+            if attempt == retries:
+                return False
+            time.sleep(1)
+            continue
+
+        if resp.status_code == 201:
+            return True
+
+        # 4xx: 参数/Token 错误，不再重试
+        if 400 <= resp.status_code < 500:
+            _log_error(
+                f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
+                "（4xx 错误，一般是参数或 Token 问题，不再重试）"
+            )
+            return False
+
+        # 5xx: 重试
+        _log_warn(
+            f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
+            f"（第 {attempt}/{retries} 次自动重试）"
+        )
+        if attempt == retries:
+            return False
+        time.sleep(1)
+
+    return False
+
+
+# -------------------- Payload 构造 --------------------
+
+
+def build_payload_for_publish(
+    meta: TrackMeta,
+    plain: Optional[str],
+    synced: Optional[str],
+    *,
+    force_instrumental: bool = False,
+) -> Dict[str, Any]:
+    """
+    构造 /api/publish 的 JSON：
+
+    - 若 force_instrumental=True 或 plain/synced 均为空/空白：
+        → 不包含 plainLyrics/syncedLyrics 字段
+        → 按官方说明：该曲目应被标记为 instrumental
+    - 否则：
+        → 同时包含 plainLyrics / syncedLyrics
+    """
+    base: Dict[str, Any] = {
+        "trackName": meta.track,
+        "artistName": meta.artist,
+        "albumName": meta.album,
+        "duration": meta.duration,
+    }
+
+    if force_instrumental:
+        return base
+
+    p = (plain or "").strip()
+    s = (synced or "").strip()
+
+    if not p and not s:
+        # 两个都确实空 → 也按 instrumental 处理，不附带歌词字段
+        return base
+
+    base["plainLyrics"] = p
+    base["syncedLyrics"] = s
+    return base
+
+
+# -------------------- 高阶上传函数（给 processor 用） --------------------
+
+
+def upload_lyrics(
+    config: AppConfig,
+    meta: TrackMeta,
+    plain: str,
+    synced: str,
+) -> bool:
+    payload = build_payload_for_publish(
+        meta,
+        plain,
+        synced,
+        force_instrumental=False,
+    )
+    return publish_with_retry(config, meta, payload, "上传歌词")
+
+
+def upload_instrumental(
+    config: AppConfig,
+    meta: TrackMeta,
+) -> bool:
+    """
+    按“纯音乐曲目”上传：
+      - 不传任何歌词字段
+      - 依赖服务器将其标记为 instrumental
+    """
+    payload = build_payload_for_publish(
+        meta,
+        plain=None,
+        synced=None,
+        force_instrumental=True,
+    )
+    return publish_with_retry(config, meta, payload, "上传纯音乐标记")

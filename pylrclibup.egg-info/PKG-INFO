@@ -1,0 +1,130 @@
+Metadata-Version: 2.4
+Name: pylrclibup
+Version: 0.1.0
+Summary: A robust Python CLI tool for uploading lyrics or instrumental tags to LRCLIB.
+Author-email: Your Name <you@example.com>
+License: MIT License
+        
+        Copyright (c) 2025 Harmonese
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the “Software”), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+Project-URL: Homepage, https://github.com/harmonese/pylrclibup
+Project-URL: Source, https://github.com/harmonese/pylrclibup
+Project-URL: Issues, https://github.com/harmonese/pylrclibup/issues
+Keywords: lrclib,lyrics,lrc,music,metadata
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests>=2.31.0
+Requires-Dist: mutagen>=1.47
+Dynamic: license-file
+
+# pylrclibup
+
+一个用于将本地 LRC 歌词 / 纯音乐信息上传到 [LRCLIB.net](https://lrclib.net) 的 Python 工具。
+
+设计目标：
+
+- 读取 **Jellyfin 音乐库** 中的 MP3（通过 MusicBrainz Picard 写好的 metadata）
+- 优先检查 LRCLIB 是否已经有歌词（`/api/get-cached`）
+- 如果没有，再尝试外部抓取（`/api/get`），可选择直接使用
+- 否则从本地 LRC 文件中解析 **同步/非同步歌词**
+- 如果是纯音乐，可上传为空歌词标记为 instrumental
+- 上传成功后，将文件移动到 `done-` 目录，并清理空文件夹
+
+> 当前项目主要为命令行使用场景设计，但内部模块也适合作为库在你自己的脚本中调用。
+
+## 安装
+
+```bash
+pip install pylrclibup
+```
+
+或在本地项目根目录：
+
+```bash
+pip install .
+```
+
+## 使用方式
+
+在包含 `tracks/` 和 `lrc-files/` 的目录下运行：
+
+```bash
+lrclib-up
+```
+
+### 常用选项
+
+* `--tracks-dir`：歌曲输入目录（默认 `tracks/`）
+* `--lrc-dir`：LRC 输入目录（默认 `lrc-files/`）
+* `--done-tracks-dir`：歌曲输出目录（默认 `done-tracks/`）
+* `--done-lrc-dir`：LRC 输出目录（默认 `done-lrc-files/`）
+* `--yes`：非交互模式，遇到可上传场景默认 “是”
+* `--dry-run`：只预览，不实际调用网络/不移动文件
+* `--single <filename>`：只处理单个 MP3 文件（相对于 `tracks-dir`）
+
+示例：
+
+```bash
+# 使用默认目录
+lrclib-up
+
+# 指定目录运行
+lrclib-up \
+  --tracks-dir /mnt/music/tracks \
+  --lrc-dir /mnt/music/lrc \
+  --done-tracks-dir /mnt/music/done-tracks \
+  --done-lrc-dir /mnt/music/done-lrc
+```
+
+## 环境变量
+
+除了命令行参数，也可以通过环境变量设置目录（优先级：命令行 > 环境变量 > 默认值）：
+
+* `PYLRCLIBUP_TRACKS_DIR`
+* `PYLRCLIBUP_LRC_DIR`
+* `PYLRCLIBUP_DONE_TRACKS_DIR`
+* `PYLRCLIBUP_DONE_LRC_DIR`
+
+例如：
+
+```bash
+export PYLRCLIBUP_TRACKS_DIR=/mnt/music/tracks
+export PYLRCLIBUP_LRC_DIR=/mnt/music/lrc
+lrclib-up
+```
+
+## 依赖
+
+* Python 3.9+
+* `requests`：访问 LRCLIB API
+* `mutagen`：读取 MP3 metadata
+
+## 状态
+
+目前功能主要从一个单文件脚本演进而来，已经支持：
+
+* 智能匹配 LRC（`Artist - Title.lrc`，多艺人匹配）
+* 自动删除网易云的 credit 行（作词/作曲/缩混/母带等）
+* 自动检测 “纯音乐，请欣赏” 并作为 instrumental 上传
+* 处理不稳定网络环境（自动重试）
+* 上传完成后自动清理文件夹结构
+
+欢迎在 Issues 中反馈 bug 或提 feature 请求。
