@@ -35,6 +35,7 @@ ENV/
 build/
 dist/
 *.egg-info/
+pylrclibup.egg-info/
 *.egg
 
 # PyInstaller

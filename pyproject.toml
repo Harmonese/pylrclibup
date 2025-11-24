@@ -8,9 +8,9 @@ version = "0.1.0"
 description = "A robust Python CLI tool for uploading lyrics or instrumental tags to LRCLIB."
 readme = "README.md"
 authors = [
-    { name="Harmonese", email="soundwaveradiator@outlook.com" },
+    { name="Harmonese", email="soundwaveradiator@gmail.com" },
 ]
-license = { file="LICENSE" }
+license = "MIT"
 requires-python = ">=3.10"
 keywords = ["lrclib", "lyrics", "lrc", "music", "metadata"]
 
@@ -19,11 +19,15 @@ dependencies = [
     "mutagen>=1.47",
 ]
 
+[tool.setuptools.packages.find]
+include = ["pylrclibup"]   # <<<<<<<<<<<<<<<<<<<<<<<< 最关键的一行
+exclude = ["test_env", "tests*", "examples*"]
+
 # 使 pip install 后自动获得命令行工具 pylrclibup
 [project.scripts]
 pylrclibup = "pylrclibup.cli.main:run_cli"
 
 [project.urls]
-Homepage = "https://github.com/harmonese/pylrclibup"
-Source = "https://github.com/harmonese/pylrclibup"
-Issues = "https://github.com/harmonese/pylrclibup/issues"
+Homepage = "https://github.com/Harmonese/pylrclibup"
+Source = "https://github.com/Harmonese/pylrclibup"
+Issues = "https://github.com/Harmonese/pylrclibup/issues"

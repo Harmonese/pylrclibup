@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from ..config import AppConfig
-from ..processor import process_all
+from ..processor import process_all, move_lrc_to_track_dirs
 
 
 def run_cli():
@@ -42,9 +42,38 @@ def run_cli():
 
     parser.add_argument("--preview-lines", type=int, default=10,
                         help="预览歌词时显示的行数")
+    
+    parser.add_argument(
+        "-d",
+        "--default-move",
+        nargs=2,
+        metavar=("TRACKS_DIR", "LRC_DIR"),
+        help=(
+            "仅进行本地匹配：第一个参数为歌曲根目录，第二个为 LRC 根目录；"
+            "不会访问 LRCLIB，只在确认后将匹配到的 LRC 移动到对应歌曲目录。"
+        ),
+    )
+
 
     args = parser.parse_args()
 
+    # ---------- 模式一：-d 本地匹配 & 移动 ----------
+    if args.default_move:
+        tracks_root_str, lrc_root_str = args.default_move
+        tracks_root = Path(tracks_root_str).resolve()
+        lrc_root = Path(lrc_root_str).resolve()
+
+        if args.yes or args.dry_run or args.single:
+            print("[WARN] -d 模式下会忽略 --yes / --dry-run / --single 这些参数。")
+
+        try:
+            move_lrc_to_track_dirs(tracks_root, lrc_root)
+        except KeyboardInterrupt:
+            print("\n[INFO] 用户中断执行（Ctrl+C），已优雅退出。")
+            sys.exit(0)
+        return
+
+    # ---------- 模式二：正常 LRCLIB 上传模式 ----------
     # 构建 AppConfig
     root = Path(args.root).resolve()
 
