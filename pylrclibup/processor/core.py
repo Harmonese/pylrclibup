@@ -57,13 +57,18 @@ def _move_after_done(
       - LRC → done_lrc_dir
       - 清理 tracks_dir / lrc_dir 下的空目录
 
-    -d 模式（pair_lrc_with_track_dir=True）：
+    匹配模式（-m, match_mode=True）：
+      - MP3 移动到 done_tracks_dir
+      - LRC （如果存在）移动到 done_tracks_dir 并重命名为相同文件名
+      - 清理 tracks_dir / lrc_dir 下的空目录
+
+    默认模式（-d, pair_lrc_with_track_dir=True）：
       - MP3 保持原地不动
-      - LRC（如果存在）移动到 MP3 所在目录
+      - LRC（如果存在）移动到 MP3 所在目录并重命名为相同文件名
       - 不清理目录（避免误删）
     """
 
-    # ⭐ -d 模式：LRC 跟随歌曲目录，歌曲不动
+    # ⭐ 默认模式：LRC 跟随歌曲目录，歌曲不动
     if config.pair_lrc_with_track_dir:
         target_dir = meta.path.parent
         
@@ -78,7 +83,30 @@ def _move_after_done(
         # 歌曲文件不动，目录也不清理
         return
 
-    # ⭐ 普通模式：沿用原来的逻辑
+    # ⭐ 匹配模式：LRC 跟随 done_tracks_dir
+    if config.match_mode:
+        # 先移动 MP3
+        new_mp3 = None
+        if meta.path.exists():
+            new_mp3 = move_with_dedup(meta.path, config.done_tracks_dir)
+            if new_mp3:
+                _log_info(f"MP3 已移动到：{new_mp3}")
+        
+        # 再移动 LRC 到 done_tracks_dir 并重命名
+        if lrc_path and lrc_path.exists() and new_mp3:
+            mp3_basename = new_mp3.stem
+            new_lrc = move_with_dedup(lrc_path, config.done_tracks_dir, new_name=mp3_basename)
+            if new_lrc:
+                _log_info(f"[match-mode] LRC 已移动到歌曲目录并重命名为：{new_lrc}")
+        elif lrc_path and lrc_path.exists():
+            # MP3 移动失败但 LRC 存在
+            _log_warn("[match-mode] MP3 移动失败，LRC 未移动")
+        
+        cleanup_empty_dirs(config.tracks_dir)
+        cleanup_empty_dirs(config.lrc_dir)
+        return
+
+    # ⭐ 普通模式：分别移动到各自的 done 目录
     if lrc_path and lrc_path.exists():
         new_lrc = move_with_dedup(lrc_path, config.done_lrc_dir)
         if new_lrc:
@@ -177,18 +205,53 @@ def process_track(
         if dry_run:
             _log_info("[dry-run] 模式下，未找到 LRC，仅提示，不上传，不标记纯音乐。")
             return
-
+        # ⭐ 新增：手动指定歌词文件选项
         while True:
             choice = input(
                 "未找到本地 LRC，选择 "
                 "[s] 跳过该歌曲 / "
+                "[m] 手动指定歌词文件 / "
                 "[i] 上传空歌词标记为纯音乐 / "
                 "[q] 退出程序: "
             ).strip().lower()
-
             if choice == "s":
                 _log_info("跳过该歌曲，不上传、不移动。")
                 return
+            elif choice == "m":
+                # ⭐ 手动输入路径（支持绝对/相对路径、引号、转义符）
+                manual_path_raw = input("请输入 LRC 文件的完整路径: ").strip()
+                if not manual_path_raw:
+                    print("路径为空，请重新选择。")
+                    continue
+                
+                # ⭐ 处理引号（单引号/双引号）
+                if (manual_path_raw.startswith("'") and manual_path_raw.endswith("'")) or \
+                (manual_path_raw.startswith('"') and manual_path_raw.endswith('"')):
+                    manual_path_raw = manual_path_raw[1:-1]
+                
+                # ⭐ 处理路径：支持绝对路径和相对路径
+                lrc_path_manual = Path(manual_path_raw).expanduser()  # 展开 ~ 符号
+                
+                # 如果是相对路径，基于当前工作目录解析
+                if not lrc_path_manual.is_absolute():
+                    lrc_path_manual = Path.cwd() / lrc_path_manual
+                
+                lrc_path_manual = lrc_path_manual.resolve()  # 解析为绝对路径
+                
+                if not lrc_path_manual.exists() or not lrc_path_manual.is_file():
+                    print(f"文件不存在或不是有效文件：{lrc_path_manual}")
+                    continue
+                
+                if lrc_path_manual.suffix.lower() != ".lrc":
+                    print(f"警告：文件扩展名不是 .lrc，是否继续？[y/N]: ", end="")
+                    confirm = input().strip().lower()
+                    if confirm not in ("y", "yes"):
+                        continue
+                
+                lrc_path = lrc_path_manual
+                _log_info(f"使用手动指定的歌词文件：{lrc_path}")
+                break  # 退出循环，继续处理
+                
             elif choice == "i":
                 _log_info("将上传空歌词（标记为纯音乐）。")
                 ok = upload_instrumental(config, meta)

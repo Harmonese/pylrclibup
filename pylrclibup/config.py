@@ -18,7 +18,7 @@ PREVIEW_LINES_DEFAULT = 10
 MAX_HTTP_RETRIES_DEFAULT = 5
 
 # 默认 User-Agent（可以在 CLI 里加个选项覆盖）
-DEFAULT_USER_AGENT = "pylrclibup/0.1 (https://github.com/yourname/pylrclibup)"
+DEFAULT_USER_AGENT = "pylrclibup (https://github.com/Harmonese/pylrclibup)"
 
 
 # -------------------- AppConfig --------------------
@@ -36,6 +36,8 @@ class AppConfig:
     - preview_lines: 预览歌词时显示的最大行数
     - max_http_retries: HTTP 自动重试次数
     - user_agent: 发送给 LRCLIB 的 User-Agent
+    - pair_lrc_with_track_dir: -d 模式标志
+    - match_mode: -m 模式标志（LRC 跟随 done_tracks）
     """
 
     tracks_dir: Path
@@ -49,7 +51,8 @@ class AppConfig:
 
     lrclib_base: str = LRCLIB_BASE
 
-    pair_lrc_with_track_dir: bool = False
+    pair_lrc_with_track_dir: bool = False  # -d 模式
+    match_mode: bool = False  # -m 模式
 
     @classmethod
     def from_env_and_defaults(
@@ -63,18 +66,23 @@ class AppConfig:
         max_http_retries: Optional[int] = None,
         user_agent: Optional[str] = None,
         pair_lrc_with_track_dir: bool = False,
+        match_mode: bool = False,
     ) -> "AppConfig":
         """
         统一入口：综合考虑
-          1. 显式传入（通常来自 CLI 参数）
-          2. 环境变量
-          3. 默认值
+        1. 显式传入（通常来自 CLI 参数）
+        2. 环境变量
+        3. 默认值
 
         优先级：参数 > 环境变量 > 默认
+
+        ⭐ 新默认逻辑：
+        - tracks_dir / lrc_dir 默认为 cwd
+        - done_tracks_dir 默认跟随 tracks_dir
+        - done_lrc_dir 默认跟随 lrc_dir
         """
 
-        # ---- 路径类配置 ----
-        # 默认基于当前工作目录（而不是包所在目录）
+        # ⭐ 默认基于当前工作目录
         cwd = Path.cwd()
 
         # 环境变量
@@ -83,30 +91,28 @@ class AppConfig:
         env_done_tracks = os.getenv("PYLRCLIBUP_DONE_TRACKS_DIR")
         env_done_lrc = os.getenv("PYLRCLIBUP_DONE_LRC_DIR")
 
-        tracks = Path(
-            tracks_dir
-            or env_tracks
-            or cwd / "tracks"
-        )
-        lrc = Path(
-            lrc_dir
-            or env_lrc
-            or cwd / "lrc-files"
-        )
-        done_tracks = Path(
-            done_tracks_dir
-            or env_done_tracks
-            or cwd / "done-tracks"
-        )
-        done_lrc = Path(
-            done_lrc_dir
-            or env_done_lrc
-            or cwd / "done-lrc-files"
-        )
+        # ⭐ 第一步：确定 tracks_dir 和 lrc_dir（默认为 cwd）
+        tracks = Path(tracks_dir or env_tracks or cwd)
+        lrc = Path(lrc_dir or env_lrc or cwd)
+
+        # ⭐ 第二步：done_tracks_dir 默认跟随 tracks_dir
+        if done_tracks_dir:
+            done_tracks = Path(done_tracks_dir)
+        elif env_done_tracks:
+            done_tracks = Path(env_done_tracks)
+        else:
+            done_tracks = tracks  # ⭐ 默认使用 tracks_dir
+
+        # ⭐ 第三步：done_lrc_dir 默认跟随 lrc_dir
+        if done_lrc_dir:
+            done_lrc = Path(done_lrc_dir)
+        elif env_done_lrc:
+            done_lrc = Path(env_done_lrc)
+        else:
+            done_lrc = lrc  # ⭐ 默认使用 lrc_dir
 
         # ---- 数值配置 ----
         if preview_lines is None:
-            # 若未显式指定，允许通过环境变量覆盖
             env_preview = os.getenv("PYLRCLIBUP_PREVIEW_LINES")
             if env_preview and env_preview.isdigit():
                 preview_lines_val = int(env_preview)
@@ -136,4 +142,6 @@ class AppConfig:
             max_http_retries=max_http_retries_val,
             user_agent=ua,
             pair_lrc_with_track_dir=pair_lrc_with_track_dir,
+            match_mode=match_mode,
         )
+
