@@ -21,19 +21,23 @@ def split_artists(s: str) -> List[str]:
     import re
 
     s = s.lower()
-    # 把 feat/featuring 先转成逗号
-    s = re.sub(r"\bfeat\.?\b", ",", s)
-    s = re.sub(r"\bfeaturing\b", ",", s)
-
-    # 其他分隔符也统一转成逗号
-    for sep in ["&", "和", "/", ";", "、", " x ", " X ", "×"]:
-        s = s.replace(sep, ",")
-
-    # 一些特殊逗号/间隔
-    for sep in ["，", "､"]:
-        s = s.replace(sep, ",")
-
-    artists = [a.strip() for a in s.split(",") if a.strip()]
+    # 1. 先处理 feat/featuring（转为特殊标记，避免被后续替换影响）
+    s = re.sub(r'\bfeat\.?\b', '<<<SEP>>>', s)
+    s = re.sub(r'\bfeaturing\b', '<<<SEP>>>', s)
+    # 2. ⭐ 关键修复：先拆分单独的半角逗号（直接相邻字符，无空格）
+    #    使用负向前瞻/后顾确保逗号前后不是空格
+    s = re.sub(r'(?<!\s),(?!\s)', '<<<SEP>>>', s)
+    
+    # 3. 处理其他分隔符（带空格的 x/X/×）
+    for sep in [" x ", " X ", "×"]:
+        s = s.replace(sep, '<<<SEP>>>')
+    
+    # 4. 处理常见符号分隔符
+    for sep in ["&", "和", "/", ";", "、", "，", "､"]:
+        s = s.replace(sep, '<<<SEP>>>')
+    # 5. 统一拆分
+    artists = [a.strip() for a in s.split('<<<SEP>>>') if a.strip()]
+    
     # 去重保持顺序
     return list(dict.fromkeys(artists))
 

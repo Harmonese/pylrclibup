@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
@@ -16,8 +17,20 @@ def normalize_name(s: str) -> str:
       - 降为小写
       - 将常见全角标点替换为半角
       - 合并多余空格
+      - 统一西里尔字母变体（如 Ё→Е）
+      - Unicode 规范化（NFC）
     """
     s = s.strip().lower()
+    s = unicodedata.normalize('NFKC', s)
+    cyrillic_map = {
+    'ё': 'е',  # 俄语
+    'і': 'и',  # 乌克兰语
+    'ї': 'и',
+    'є': 'е',
+    'ґ': 'г',
+    }
+    for old, new in cyrillic_map.items():
+    s = s.replace(old, new)
     replacements = {
         "（": "(",
         "）": ")",
@@ -28,9 +41,15 @@ def normalize_name(s: str) -> str:
         "，": ",",
         "！": "!",
         "？": "?",
+        "＆": "&",
+        "／": "/",
+        "；": ";",
     }
     for k, v in replacements.items():
         s = s.replace(k, v)
+    
+    s = ''.join(ch for ch in s if unicodedata.category(ch)[0] not in ('C', 'Z') or ch == ' ')
+    
     s = re.sub(r"\s+", " ", s)
     return s
 
