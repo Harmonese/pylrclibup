@@ -52,6 +52,11 @@ def _move_after_done(
       - /api/get-cached 已有歌词
       - 上传成功（外部歌词 / 本地 LRC / 纯音乐）
 
+    ⭐ 原地模式（keep_in_place=True）：
+      - 用户未指定任何 --done-* 参数
+      - 文件保持在各自的原始目录，不执行移动
+      - 不清理目录
+
     普通模式（pair_lrc_with_track_dir=False）：
       - MP3 → done_tracks_dir
       - LRC → done_lrc_dir
@@ -67,6 +72,11 @@ def _move_after_done(
       - LRC（如果存在）移动到 MP3 所在目录并重命名为相同文件名
       - 不清理目录（避免误删）
     """
+
+    # ⭐ 原地模式：什么都不做
+    if config.keep_in_place:
+        _log_info("[keep-in-place] 文件保持原地，不执行移动。")
+        return
 
     # ⭐ 默认模式：LRC 跟随歌曲目录，歌曲不动
     if config.pair_lrc_with_track_dir:

@@ -38,6 +38,7 @@ class AppConfig:
     - user_agent: 发送给 LRCLIB 的 User-Agent
     - pair_lrc_with_track_dir: -d 模式标志
     - match_mode: -m 模式标志（LRC 跟随 done_tracks）
+    - keep_in_place: ⭐ 新增：原地模式（文件不移动）
     """
 
     tracks_dir: Path
@@ -53,6 +54,7 @@ class AppConfig:
 
     pair_lrc_with_track_dir: bool = False  # -d 模式
     match_mode: bool = False  # -m 模式
+    keep_in_place: bool = False  # ⭐ 原地模式
 
     @classmethod
     def from_env_and_defaults(
@@ -76,10 +78,10 @@ class AppConfig:
 
         优先级：参数 > 环境变量 > 默认
 
-        ⭐ 新默认逻辑：
+        ⭐ 新逻辑：
         - tracks_dir / lrc_dir 默认为 cwd
-        - done_tracks_dir 默认跟随 tracks_dir
-        - done_lrc_dir 默认跟随 lrc_dir
+        - 如果 done_tracks_dir / done_lrc_dir 都未指定 → 启用"原地模式"
+        - 原地模式下，done_*_dir 设为与 tracks/lrc 相同，但实际移动时会跟随文件父目录
         """
 
         # ⭐ 默认基于当前工作目录
@@ -95,21 +97,28 @@ class AppConfig:
         tracks = Path(tracks_dir or env_tracks or cwd)
         lrc = Path(lrc_dir or env_lrc or cwd)
 
-        # ⭐ 第二步：done_tracks_dir 默认跟随 tracks_dir
+        # ⭐ 第二步：判断是否为"原地模式"
+        # 只有当用户完全没有指定 done_* 参数时才启用
+        user_specified_done_tracks = bool(done_tracks_dir or env_done_tracks)
+        user_specified_done_lrc = bool(done_lrc_dir or env_done_lrc)
+        
+        keep_in_place = not (user_specified_done_tracks or user_specified_done_lrc)
+
+        # ⭐ 第三步：设置 done_tracks_dir 和 done_lrc_dir
+        # 原地模式下，这些值会被忽略，实际移动时使用文件的父目录
         if done_tracks_dir:
             done_tracks = Path(done_tracks_dir)
         elif env_done_tracks:
             done_tracks = Path(env_done_tracks)
         else:
-            done_tracks = tracks  # ⭐ 默认使用 tracks_dir
+            done_tracks = tracks  # 占位值
 
-        # ⭐ 第三步：done_lrc_dir 默认跟随 lrc_dir
         if done_lrc_dir:
             done_lrc = Path(done_lrc_dir)
         elif env_done_lrc:
             done_lrc = Path(env_done_lrc)
         else:
-            done_lrc = lrc  # ⭐ 默认使用 lrc_dir
+            done_lrc = lrc  # 占位值
 
         # ---- 数值配置 ----
         if preview_lines is None:
@@ -143,5 +152,5 @@ class AppConfig:
             user_agent=ua,
             pair_lrc_with_track_dir=pair_lrc_with_track_dir,
             match_mode=match_mode,
+            keep_in_place=keep_in_place,  # ⭐ 新增
         )
-
