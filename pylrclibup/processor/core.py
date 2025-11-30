@@ -6,7 +6,7 @@ from typing import Iterable, List, Optional
 
 from ..config import AppConfig
 from ..model import TrackMeta, LyricsRecord
-from ..lrc import find_lrc_for_track, parse_lrc_file, ParsedLRC
+from ..lrc import find_lrc_for_track, parse_lrc_file, write_lrc_file, ParsedLRC
 from ..api import ApiClient, upload_lyrics, upload_instrumental
 from ..fs import move_with_dedup, cleanup_empty_dirs
 
@@ -66,14 +66,15 @@ def _move_after_done(
     # ⭐ -d 模式：LRC 跟随歌曲目录，歌曲不动
     if config.pair_lrc_with_track_dir:
         target_dir = meta.path.parent
-
+        
         if lrc_path and lrc_path.exists():
-            new_lrc = move_with_dedup(lrc_path, target_dir)
+            # ⭐ 重命名为和 MP3 相同的文件名（不包含扩展名）
+            mp3_basename = meta.path.stem
+            new_lrc = move_with_dedup(lrc_path, target_dir, new_name=mp3_basename)
             if new_lrc:
-                _log_info(f"[pair-mode] LRC 已移动到歌曲目录：{new_lrc}")
+                _log_info(f"[pair-mode] LRC 已移动并重命名为：{new_lrc}")
         else:
             _log_info("[pair-mode] 没有 LRC 可移动。")
-
         # 歌曲文件不动，目录也不清理
         return
 
@@ -212,6 +213,16 @@ def process_track(
     _preview("本地 plainLyrics（整理后，将上传）", parsed.plain, config.preview_lines)
     _preview("本地 syncedLyrics（整理后，将上传）", parsed.synced, config.preview_lines)
 
+    if dry_run:
+        _log_info("[dry-run] 模式，仅预览 LRC，不上传。")
+        return
+
+    # 5. 写回标准化的 LRC 内容到原文件
+    if not dry_run:
+        if write_lrc_file(lrc_path, parsed.synced):
+            _log_info(f"✓ LRC 文件已更新为标准化内容：{lrc_path.name}")
+        else:
+            _log_warn(f"⚠ LRC 文件写入失败，但将继续处理：{lrc_path.name}")
     if dry_run:
         _log_info("[dry-run] 模式，仅预览 LRC，不上传。")
         return

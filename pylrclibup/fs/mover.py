@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
-
-def move_with_dedup(src: Path, dst_dir: Path) -> Path | None:
+def move_with_dedup(src: Path, dst_dir: Path, *, new_name: Optional[str] = None) -> Path | None:
     """
     将 src 移动到 dst_dir，若同名文件已存在，则自动添加 _dup 后缀。
 
@@ -13,6 +13,10 @@ def move_with_dedup(src: Path, dst_dir: Path) -> Path | None:
         dst_dir.mkdir(parents=True, exist_ok=True)
         target = dst_dir / src.name
 
+        if new_name:
+            target = dst_dir / f"{new_name}{src.suffix}"
+        else:
+            target = dst_dir / src.name
         # 处理重名情况
         if target.exists():
             stem = target.stem

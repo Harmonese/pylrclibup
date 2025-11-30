@@ -1,0 +1,34 @@
+.
+├── __init__.py
+├── .DS_Store
+├── api
+│   ├── __init__.py
+│   ├── client.py
+│   ├── http.py
+│   ├── pow.py
+│   └── publish.py
+├── cli
+│   ├── __init__.py
+│   └── main.py
+├── config.py
+├── exceptions.py
+├── fs
+│   ├── __init__.py
+│   ├── cleaner.py
+│   ├── mover.py
+│   └── paths.py
+├── lrc
+│   ├── __init__.py
+│   ├── matcher.py
+│   └── parser.py
+├── model
+│   ├── __init__.py
+│   ├── lyrics.py
+│   └── track.py
+├── processor
+│   ├── __init__.py
+│   └── core.py
+├── pylrclibup_all_py_files.txt
+└── pylrclibup_structure.txt
+
+7 directories, 25 files
