@@ -1,4 +1,4 @@
-# ===== model/track.py（重构支持多格式）=====
+# ===== model/track.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from mutagen import File as MutaFile
 from mutagen.id3 import ID3NoHeaderError
 
 from ..logging_utils import log_warn, log_error, log_debug
+from ..i18n import get_text as _
 
 
 # 各格式标签键映射（统一到 title, artist, album）
@@ -101,7 +102,7 @@ class TrackMeta:
                     if result:
                         return result
             except Exception as e:
-                log_debug(f"读取标签 {key} 失败: {e}")
+                log_debug(_("读取标签 {key} 失败: {error}").format(key=key, error=str(e)))
                 continue
         
         return None
@@ -118,13 +119,13 @@ class TrackMeta:
         try:
             audio = MutaFile(audio_path)
             if audio is None:
-                log_warn(f"无法读取音频文件：{audio_path.name}")
+                log_warn(_("无法读取音频文件：{filename}").format(filename=audio_path.name))
                 return None
         except ID3NoHeaderError:
-            log_warn(f"音频文件无标签：{audio_path.name}")
+            log_warn(_("音频文件无标签：{filename}").format(filename=audio_path.name))
             return None
         except Exception as e:
-            log_error(f"读取音频文件异常 {audio_path.name}: {e}")
+            log_error(_("读取音频文件异常 {filename}: {error}").format(filename=audio_path.name, error=str(e)))
             return None
 
         # 使用统一接口读取标签
@@ -133,7 +134,7 @@ class TrackMeta:
         album = cls._get_universal_tag(audio, "album", ext)
 
         if not track or not artist or not album:
-            log_warn(f"音频文件标签不完整：{audio_path.name}")
+            log_warn(_("音频文件标签不完整：{filename}").format(filename=audio_path.name))
             return None
 
         # 读取时长
@@ -142,7 +143,7 @@ class TrackMeta:
             duration = int(round(audio.info.length))
         
         if duration <= 0:
-            log_warn(f"音频文件时长无效：{audio_path.name}")
+            log_warn(_("音频文件时长无效：{filename}").format(filename=audio_path.name))
             return None
 
         return cls(

@@ -13,6 +13,7 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: requests>=2.31.0
 Requires-Dist: mutagen>=1.47
+Requires-Dist: babel>=2.12.0
 Dynamic: license-file
 
 # pylrclibup

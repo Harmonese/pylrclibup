@@ -1,3 +1,5 @@
+# ===== api/http.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 import random
@@ -9,6 +11,7 @@ from requests import RequestException
 
 from ..config import AppConfig
 from ..logging_utils import log_info, log_warn, log_error
+from ..i18n import get_text as _
 
 
 def _calculate_backoff(attempt: int, base: float = 1.0, max_delay: float = 30.0) -> float:
@@ -62,8 +65,13 @@ def http_request_json(
         except RequestException as e:
             backoff = _calculate_backoff(attempt)
             log_warn(
-                f"{label} 调用失败（第 {attempt}/{retries} 次），"
-                f"等待 {backoff:.1f}s 后重试: {e}"
+                _("{label} 调用失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试: {error}").format(
+                    label=label,
+                    attempt=attempt,
+                    retries=retries,
+                    backoff=backoff,
+                    error=str(e)
+                )
             )
             if attempt == retries:
                 return None
@@ -79,24 +87,37 @@ def http_request_json(
                 return resp.json()
             except ValueError as e:
                 log_warn(
-                    f"{label} 解析 JSON 失败: {e} "
-                    f"(status={resp.status_code}, body={resp.text[:200]!r})"
+                    _("{label} 解析 JSON 失败: {error} (status={status}, body={body})").format(
+                        label=label,
+                        error=str(e),
+                        status=resp.status_code,
+                        body=resp.text[:200]
+                    )
                 )
                 return None
 
         # 4xx 默认认为是参数/认证问题，不重试
         if 400 <= resp.status_code < 500:
             log_warn(
-                f"{label} 请求失败：HTTP {resp.status_code}, body={resp.text[:200]!r}"
+                _("{label} 请求失败：HTTP {status}, body={body}").format(
+                    label=label,
+                    status=resp.status_code,
+                    body=resp.text[:200]
+                )
             )
             return None
 
         # 5xx → 重试
         backoff = _calculate_backoff(attempt)
         log_warn(
-            f"{label} 请求失败：HTTP {resp.status_code}, "
-            f"body={resp.text[:200]!r}（第 {attempt}/{retries} 次），"
-            f"等待 {backoff:.1f}s 后重试"
+            _("{label} 请求失败：HTTP {status}, body={body}（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试").format(
+                label=label,
+                status=resp.status_code,
+                body=resp.text[:200],
+                attempt=attempt,
+                retries=retries,
+                backoff=backoff
+            )
         )
         if attempt == retries:
             return None

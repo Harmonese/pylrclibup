@@ -17,6 +17,7 @@ keywords = ["lrclib", "lyrics", "lrc", "music", "metadata"]
 dependencies = [
     "requests>=2.31.0",
     "mutagen>=1.47",
+    "babel>=2.12.0",
 ]
 
 [tool.setuptools.packages.find]

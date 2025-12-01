@@ -4,6 +4,7 @@ pyproject.toml
 pylrclibup/__init__.py
 pylrclibup/config.py
 pylrclibup/exceptions.py
+pylrclibup/i18n.py
 pylrclibup/logging_utils.py
 pylrclibup/py.typed
 pylrclibup.egg-info/PKG-INFO

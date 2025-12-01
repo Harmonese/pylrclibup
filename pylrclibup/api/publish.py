@@ -1,3 +1,5 @@
+# ===== api/publish.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 import random
@@ -10,6 +12,7 @@ from requests import RequestException
 from ..config import AppConfig
 from ..model import TrackMeta
 from ..logging_utils import log_info, log_warn, log_error
+from ..i18n import get_text as _
 from .http import http_request_json
 from .pow import solve_pow
 
@@ -27,7 +30,7 @@ def request_publish_token(config: AppConfig) -> Optional[str]:
         config,
         "POST",
         url,
-        "请求发布令牌 (/api/request-challenge)",
+        _("请求发布令牌 (/api/request-challenge)"),
         treat_404_as_none=False,
     )
     if not data:
@@ -36,13 +39,13 @@ def request_publish_token(config: AppConfig) -> Optional[str]:
     prefix = data.get("prefix")
     target = data.get("target")
     if not prefix or not target:
-        log_error(f"请求发布令牌返回异常数据：{data}")
+        log_error(_("请求发布令牌返回异常数据：{data}").format(data=data))
         return None
 
     try:
         nonce = solve_pow(prefix, target)
     except Exception as e:
-        log_error(f"PoW 求解失败：{e}")
+        log_error(_("PoW 求解失败：{error}").format(error=str(e)))
         return None
 
     return f"{prefix}:{nonce}"
@@ -76,8 +79,12 @@ def publish_with_retry(
         if not token:
             backoff = _calculate_backoff(attempt)
             log_warn(
-                f"{label}：获取发布令牌失败（第 {attempt}/{retries} 次），"
-                f"等待 {backoff:.1f}s 后重试"
+                _("{label}：获取发布令牌失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试").format(
+                    label=label,
+                    attempt=attempt,
+                    retries=retries,
+                    backoff=backoff
+                )
             )
             if attempt == retries:
                 return False
@@ -95,8 +102,13 @@ def publish_with_retry(
         except RequestException as e:
             backoff = _calculate_backoff(attempt)
             log_warn(
-                f"{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次），"
-                f"等待 {backoff:.1f}s 后重试: {e}"
+                _("{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试: {error}").format(
+                    label=label,
+                    attempt=attempt,
+                    retries=retries,
+                    backoff=backoff,
+                    error=str(e)
+                )
             )
             if attempt == retries:
                 return False
@@ -109,16 +121,25 @@ def publish_with_retry(
         # 4xx: 参数/Token 错误，不再重试
         if 400 <= resp.status_code < 500:
             log_error(
-                f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
-                "（4xx 错误，一般是参数或 Token 问题，不再重试）"
+                _("{label} 失败：HTTP {status}, body={body}（4xx 错误，一般是参数或 Token 问题，不再重试）").format(
+                    label=label,
+                    status=resp.status_code,
+                    body=resp.text[:200]
+                )
             )
             return False
 
         # 5xx: 重试
         backoff = _calculate_backoff(attempt)
         log_warn(
-            f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
-            f"（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试"
+            _("{label} 失败：HTTP {status}, body={body}（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试").format(
+                label=label,
+                status=resp.status_code,
+                body=resp.text[:200],
+                attempt=attempt,
+                retries=retries,
+                backoff=backoff
+            )
         )
         if attempt == retries:
             return False
@@ -171,10 +192,10 @@ def upload_lyrics(
     synced: str,
 ) -> bool:
     payload = build_payload_for_publish(meta, plain, synced, force_instrumental=False)
-    return publish_with_retry(config, meta, payload, "上传歌词")
+    return publish_with_retry(config, meta, payload, _("上传歌词"))
 
 
 def upload_instrumental(config: AppConfig, meta: TrackMeta) -> bool:
     """按"纯音乐曲目"上传"""
     payload = build_payload_for_publish(meta, plain=None, synced=None, force_instrumental=True)
-    return publish_with_retry(config, meta, payload, "上传纯音乐标记")
+    return publish_with_retry(config, meta, payload, _("上传纯音乐标记"))

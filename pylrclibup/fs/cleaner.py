@@ -1,8 +1,11 @@
+# ===== fs/cleaner.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 from pathlib import Path
 
 from ..logging_utils import log_info, log_warn
+from ..i18n import get_text as _
 
 
 def cleanup_empty_dirs(root: Path) -> None:
@@ -25,8 +28,8 @@ def cleanup_empty_dirs(root: Path) -> None:
             # 检查目录是否为空
             if not any(d.iterdir()):
                 d.rmdir()
-                log_info(f"已删除空目录：{d}")
+                log_info(_("已删除空目录：{dir}").format(dir=d))
         except PermissionError:
-            log_warn(f"无权限删除目录：{d}")
+            log_warn(_("无权限删除目录：{dir}").format(dir=d))
         except OSError as e:
-            log_warn(f"删除目录失败 {d}: {e}")
+            log_warn(_("删除目录失败 {dir}: {error}").format(dir=d, error=str(e)))

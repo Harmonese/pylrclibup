@@ -1,3 +1,5 @@
+# ===== lrc/matcher.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,6 +8,7 @@ import re
 
 from ..config import AppConfig
 from ..model import TrackMeta
+from ..i18n import get_text as _
 from .parser import normalize_name
 
 
@@ -90,14 +93,14 @@ def find_lrc_for_track(
         return candidates[0]
 
     # 多个候选 → 交互选择
-    print("\n匹配到多个歌词文件，请选择：")
+    print("\n" + _("匹配到多个歌词文件，请选择："))
     for idx, c in enumerate(candidates, 1):
         print(f"{idx}) {c}")
 
     while True:
-        choice = input(f"请输入 1-{len(candidates)}: ").strip()
+        choice = input(_("请输入 1-{max}: ").format(max=len(candidates))).strip()
         if choice.isdigit():
             i = int(choice)
             if 1 <= i <= len(candidates):
                 return candidates[i - 1]
-        print("输入无效，请重新输入。")
+        print(_("输入无效，请重新输入。"))

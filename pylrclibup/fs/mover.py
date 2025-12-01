@@ -1,9 +1,12 @@
+# ===== fs/mover.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
 
 from ..logging_utils import log_warn
+from ..i18n import get_text as _
 
 
 def move_with_dedup(
@@ -54,5 +57,5 @@ def move_with_dedup(
         return target
 
     except Exception as e:
-        log_warn(f"移动文件失败：{src} → {dst_dir}：{e}")
+        log_warn(_("移动文件失败：{src} → {dst}：{error}").format(src=src, dst=dst_dir, error=str(e)))
         return None

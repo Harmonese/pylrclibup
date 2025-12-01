@@ -1,0 +1,543 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the pylrclibup package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: pylrclibup 0.3.0\n"
+"Report-Msgid-Bugs-To: https://github.com/Harmonese/pylrclibup/issues\n"
+"POT-Creation-Date: 2025-12-01 20:17+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pylrclibup/processor/core.py:25
+msgid "[空]"
+msgstr "[Empty]"
+
+#: pylrclibup/processor/core.py:32
+#, python-brace-format
+msgid "... 共 {count} 行"
+msgstr "... {count} lines in total"
+
+#: pylrclibup/processor/core.py:54
+#, python-brace-format
+msgid "音频文件已移动到：{path}"
+msgstr "Audio file moved to: {path}"
+
+#: pylrclibup/processor/core.py:56
+msgid "音频文件移动失败，将保持原地"
+msgstr "Failed to move audio file, will keep in place"
+
+#: pylrclibup/processor/core.py:87
+#, python-brace-format
+msgid "移动到 {dir}"
+msgstr "Moved to {dir}"
+
+#: pylrclibup/processor/core.py:89
+#, python-brace-format
+msgid "重命名为 {name}"
+msgstr "Renamed to {name}"
+
+#: pylrclibup/processor/core.py:90
+#, python-brace-format
+msgid "LRC 已{action}"
+msgstr "LRC {action}"
+
+#: pylrclibup/processor/core.py:90
+msgid "、"
+msgstr ", "
+
+#: pylrclibup/processor/core.py:92
+msgid "LRC 移动失败"
+msgstr "Failed to move LRC file"
+
+#: pylrclibup/processor/core.py:94
+msgid "LRC 保持原地不动"
+msgstr "LRC file kept in place"
+
+#: pylrclibup/processor/core.py:110
+msgid "内部数据库已存在歌词 → 自动移动音频文件+LRC 并跳过上传（不再重复提交）"
+msgstr "Lyrics already exist in internal database → Auto-move audio file + LRC and skip upload (no duplicate submission)"
+
+#: pylrclibup/processor/core.py:111
+msgid "已有 plainLyrics"
+msgstr "Existing plainLyrics"
+
+#: pylrclibup/processor/core.py:112
+msgid "已有 syncedLyrics"
+msgstr "Existing syncedLyrics"
+
+#: pylrclibup/processor/core.py:133
+msgid "外部抓取到歌词（仅供参考，可选择是否直接使用外部版本上传）："
+msgstr "External lyrics fetched (for reference only, you may choose whether to upload the external version directly):"
+
+#: pylrclibup/processor/core.py:134
+msgid "外部 plainLyrics"
+msgstr "External plainLyrics"
+
+#: pylrclibup/processor/core.py:135
+msgid "外部 syncedLyrics"
+msgstr "External syncedLyrics"
+
+#: pylrclibup/processor/core.py:138
+msgid "外部记录中该曲被标记为 instrumental（或两种歌词字段均为空）。"
+msgstr "This track is marked as instrumental in external records (or both lyric fields are empty)."
+
+#: pylrclibup/processor/core.py:141
+msgid "是否直接使用外部版本上传？[y/N]: "
+msgstr "Upload using external version directly? [y/N]: "
+
+#: pylrclibup/processor/core.py:145
+msgid "用户选择不直接使用外部歌词 → 继续尝试本地 LRC。"
+msgstr "User chose not to use external lyrics directly → Continue with local LRC."
+
+#: pylrclibup/processor/core.py:150
+msgid "将使用“纯音乐”方式上传（不包含任何歌词内容，只标记为 instrumental）。"
+msgstr "Will upload as instrumental (no lyrics content, only marked as instrumental)."
+
+#: pylrclibup/processor/core.py:153
+msgid "将直接使用外部 plain+synced 歌词上传。"
+msgstr "Will upload directly using external plain + synced lyrics."
+
+#: pylrclibup/processor/core.py:157
+msgid "外部歌词上传完成 ✓"
+msgstr "External lyrics upload completed ✓"
+
+#: pylrclibup/processor/core.py:161
+msgid "外部歌词上传失败 ×"
+msgstr "External lyrics upload failed ×"
+
+#: pylrclibup/processor/core.py:178
+msgid ""
+"未找到本地 LRC，选择 [s] 跳过该歌曲 / [m] 手动指定歌词文件 / [i] 上传空歌词标"
+"记为纯音乐 / [q] 退出程序: "
+msgstr ""
+"Local LRC not found, choose [s] Skip this song / [m] Manually specify lyrics file / [i] Upload empty lyrics as instrumental / [q] Quit program: "
+
+#: pylrclibup/processor/core.py:182
+msgid "跳过该歌曲，不上传、不移动。"
+msgstr "Skip this song, no upload, no move."
+
+#: pylrclibup/processor/core.py:192
+msgid "将上传空歌词（标记为纯音乐）。"
+msgstr "Will upload empty lyrics (marked as instrumental)."
+
+#: pylrclibup/processor/core.py:195
+msgid "纯音乐标记上传完成 ✓"
+msgstr "Instrumental marker upload completed ✓"
+
+#: pylrclibup/processor/core.py:198
+msgid "纯音乐标记上传失败 ×"
+msgstr "Instrumental marker upload failed ×"
+
+#: pylrclibup/processor/core.py:202
+msgid "用户选择退出程序。"
+msgstr "User chose to exit program."
+
+#: pylrclibup/processor/core.py:206
+msgid "无效输入，请重新选择。"
+msgstr "Invalid input, please choose again."
+
+#: pylrclibup/processor/core.py:211
+msgid "请输入 LRC 文件的完整路径: "
+msgstr "Please enter the full path of the LRC file: "
+
+#: pylrclibup/processor/core.py:214
+msgid "路径为空，请重新选择。"
+msgstr "Path is empty, please choose again."
+
+#: pylrclibup/processor/core.py:231
+#, python-brace-format
+msgid "文件不存在或不是有效文件：{path}"
+msgstr "File does not exist or is not a valid file: {path}"
+
+#: pylrclibup/processor/core.py:235
+msgid "警告：文件扩展名不是 .lrc，是否继续？[y/N]: "
+msgstr "Warning: File extension is not .lrc, continue? [y/N]: "
+
+#: pylrclibup/processor/core.py:239
+#, python-brace-format
+msgid "使用手动指定的歌词文件：{path}"
+msgstr "Using manually specified lyrics file: {path}"
+
+#: pylrclibup/processor/core.py:255
+msgid "根据解析结果：将按纯音乐曲目上传。"
+msgstr "Based on parsing results: will upload as instrumental track."
+
+#: pylrclibup/processor/core.py:256
+msgid "确认以纯音乐方式上传？[y/N]: "
+msgstr "Confirm upload as instrumental? [y/N]: "
+
+#: pylrclibup/processor/core.py:258 pylrclibup/processor/core.py:272
+msgid "用户取消上传。"
+msgstr "User canceled upload."
+
+#: pylrclibup/processor/core.py:263
+msgid "纯音乐上传完成 ✓"
+msgstr "Instrumental upload completed ✓"
+
+#: pylrclibup/processor/core.py:266
+msgid "纯音乐上传失败 ×"
+msgstr "Instrumental upload failed ×"
+
+#: pylrclibup/processor/core.py:270
+msgid "确认上传本地歌词？[y/N]: "
+msgstr "Confirm upload local lyrics? [y/N]: "
+
+#: pylrclibup/processor/core.py:277
+msgid "上传完成 ✓"
+msgstr "Upload completed ✓"
+
+#: pylrclibup/processor/core.py:280
+msgid "上传失败 ×"
+msgstr "Upload failed ×"
+
+#: pylrclibup/processor/core.py:301
+#, python-brace-format
+msgid "处理：{meta}"
+msgstr "Processing: {meta}"
+
+#: pylrclibup/processor/core.py:307
+#, python-brace-format
+msgid "⚠ 未找到本地 LRC 文件：{track}"
+msgstr "⚠ Local LRC file not found: {track}"
+
+#: pylrclibup/processor/core.py:314
+#, python-brace-format
+msgid "正在标准化 LRC 文件：{filename}"
+msgstr "Normalizing LRC file: {filename}"
+
+#: pylrclibup/processor/core.py:316
+msgid "✓ LRC 文件已标准化"
+msgstr "✓ LRC file normalized"
+
+#: pylrclibup/processor/core.py:318
+msgid "⚠ LRC 文件标准化失败，将继续使用原始内容"
+msgstr "⚠ LRC file normalization failed, will continue with original content"
+
+#: pylrclibup/processor/core.py:337
+msgid "LRC 中检测到“纯音乐，请欣赏”等字样，将按纯音乐处理（不上传歌词内容）。"
+msgstr "Detected instrumental markers (e.g., '纯音乐，请欣赏') in LRC. Will be treated as instrumental (no lyrics content uploaded)."
+
+#: pylrclibup/processor/core.py:339
+msgid "本地 plainLyrics（将上传）"
+msgstr "Local plainLyrics (will be uploaded)"
+
+#: pylrclibup/processor/core.py:340
+msgid "本地 syncedLyrics（将上传）"
+msgstr "Local syncedLyrics (will be uploaded)"
+
+#: pylrclibup/processor/core.py:361
+#, python-brace-format
+msgid "扫描音频文件：{extensions}"
+msgstr "Scanning audio files: {extensions}"
+
+#: pylrclibup/processor/core.py:373
+#, python-brace-format
+msgid "未找到任何支持的音频文件（{extensions}）"
+msgstr "No supported audio files found ({extensions})"
+
+#: pylrclibup/processor/core.py:376
+#, python-brace-format
+msgid "共找到 {total} 个音频文件"
+msgstr "Found {total} audio files in total"
+
+#: pylrclibup/processor/core.py:379
+#, python-brace-format
+msgid "[{idx}/{total}] 开始处理..."
+msgstr "[{idx}/{total}] Start processing..."
+
+#: pylrclibup/processor/core.py:383
+msgid "全部完成。"
+msgstr "All completed."
+
+#: pylrclibup/cli/main.py:41
+msgid "错误：--follow 与 --done-lrc 不能同时使用"
+msgstr "Error: --follow and --done-lrc cannot be used together"
+
+#: pylrclibup/cli/main.py:42
+msgid "提示：--follow 表示 LRC 跟随音频文件，不应指定独立的 LRC 输出目录"
+msgstr "Hint: --follow means LRC follows audio files, should not specify a separate LRC output directory"
+
+#: pylrclibup/cli/main.py:47
+msgid "错误：-d/--default 与 -m/--match 不能同时使用"
+msgstr "Error: -d/--default and -m/--match cannot be used together"
+
+#: pylrclibup/cli/main.py:60
+msgid "路径参数"
+msgstr "Path arguments"
+
+#: pylrclibup/cli/main.py:63
+#, python-brace-format
+msgid "错误：-d/--default 模式不能与以下参数同时使用：{conflicts}"
+msgstr "Error: -d/--default mode cannot be used with the following arguments: {conflicts}"
+
+#: pylrclibup/cli/main.py:78
+#, python-brace-format
+msgid "错误：-m/--match 模式不能与以下参数同时使用：{conflicts}"
+msgstr "Error: -m/--match mode cannot be used with the following arguments: {conflicts}"
+
+#: pylrclibup/cli/main.py:99
+msgid "将本地歌词文件或纯音乐标记上传到 LRCLIB。"
+msgstr "Upload local lyrics files or instrumental markers to LRCLIB."
+
+#: pylrclibup/cli/main.py:106
+msgid "音频文件输入目录（默认：当前工作目录）"
+msgstr "Audio files input directory (default: current working directory)"
+
+#: pylrclibup/cli/main.py:111
+msgid "LRC 文件输入目录（默认：当前工作目录）"
+msgstr "LRC files input directory (default: current working directory)"
+
+#: pylrclibup/cli/main.py:116
+msgid "处理后音频文件移动到的目录（默认：原地不动）"
+msgstr "Directory to move processed audio files to (default: keep in place)"
+
+#: pylrclibup/cli/main.py:121
+msgid ""
+"处理后 LRC 文件移动到的目录（默认：原地不动/跟随音频，取决于 --follow 设置）"
+msgstr ""
+"Directory to move processed LRC files to (default: keep in place/follow audio, depends on --follow setting)"
+
+#: pylrclibup/cli/main.py:128
+msgid "LRC 文件跟随音频文件到同一目录（与 --done-lrc 冲突）"
+msgstr "LRC files follow audio files to the same directory (conflicts with --done-lrc)"
+
+#: pylrclibup/cli/main.py:133
+msgid "处理后将 LRC 重命名为与音频文件同名"
+msgstr "Rename LRC to match audio file name after processing"
+
+#: pylrclibup/cli/main.py:138
+msgid "处理前标准化 LRC 文件（移除制作信息、翻译等）"
+msgstr "Normalize LRC files before processing (remove production info, translations, etc.)"
+
+#: pylrclibup/cli/main.py:146
+msgid "预览歌词时显示的行数"
+msgstr "Number of lines to display when previewing lyrics"
+
+#: pylrclibup/cli/main.py:155
+msgid ""
+"快捷模式：等价于 --tracks TRACKS_DIR --lrc LRC_DIR --follow --rename --"
+"cleanse。音频文件保持原地不动，LRC 移动到音频目录并重命名，且会标准化 LRC 文"
+"件。"
+msgstr ""
+"Quick mode: equivalent to --tracks TRACKS_DIR --lrc LRC_DIR --follow --rename --cleanse. Audio files stay in place, LRC files are moved to audio directory and renamed, and LRC files are normalized."
+
+#: pylrclibup/cli/main.py:164
+msgid ""
+"匹配模式：等价于 --follow --rename --cleanse。处理完成后，LRC 移动到音频目录"
+"并重命名为与音频文件相同的名称，且会标准化 LRC 文件。"
+msgstr ""
+"Match mode: equivalent to --follow --rename --cleanse. After processing, LRC files are moved to audio directory and renamed to match audio file names, and LRC files are normalized."
+
+#: pylrclibup/cli/main.py:175
+msgid "界面语言：zh_CN（简体中文）/ en_US（English）/ auto（自动检测）"
+msgstr "Interface language: zh_CN (Simplified Chinese) / en_US (English) / auto (Auto-detect)"
+
+#: pylrclibup/cli/main.py:233
+msgid "[信息] 用户中断执行（Ctrl+C），已优雅退出。"
+msgstr "[Info] User interrupted execution (Ctrl+C), gracefully exited."
+
+#: pylrclibup/lrc/matcher.py:96
+msgid "匹配到多个歌词文件，请选择："
+msgstr "Multiple lyrics files matched, please choose:"
+
+#: pylrclibup/lrc/matcher.py:101
+#, python-brace-format
+msgid "请输入 1-{max}: "
+msgstr "Please enter 1-{max}: "
+
+#: pylrclibup/lrc/matcher.py:106
+msgid "输入无效，请重新输入。"
+msgstr "Invalid input, please try again."
+
+#: pylrclibup/lrc/parser.py:142
+#, python-brace-format
+msgid "读取 LRC 文件失败 {path}: {error}"
+msgstr "Failed to read LRC file {path}: {error}"
+
+#: pylrclibup/lrc/parser.py:147
+#, python-brace-format
+msgid "LRC 文件无有效时间戳: {path}"
+msgstr "LRC file has no valid timestamps: {path}"
+
+#: pylrclibup/lrc/parser.py:242
+#, python-brace-format
+msgid "写入 LRC 文件失败 {path}: {error}"
+msgstr "Failed to write LRC file {path}: {error}"
+
+#: pylrclibup/lrc/parser.py:264
+#, python-brace-format
+msgid "标准化 LRC 文件失败 {path}: {error}"
+msgstr "Failed to normalize LRC file {path}: {error}"
+
+#: pylrclibup/model/track.py:105
+#, python-brace-format
+msgid "读取标签 {key} 失败: {error}"
+msgstr "Failed to read tag {key}: {error}"
+
+#: pylrclibup/model/track.py:122
+#, python-brace-format
+msgid "无法读取音频文件：{filename}"
+msgstr "Unable to read audio file: {filename}"
+
+#: pylrclibup/model/track.py:125
+#, python-brace-format
+msgid "音频文件无标签：{filename}"
+msgstr "Audio file has no tags: {filename}"
+
+#: pylrclibup/model/track.py:128
+#, python-brace-format
+msgid "读取音频文件异常 {filename}: {error}"
+msgstr "Exception reading audio file {filename}: {error}"
+
+#: pylrclibup/model/track.py:137
+#, python-brace-format
+msgid "音频文件标签不完整：{filename}"
+msgstr "Audio file tags incomplete: {filename}"
+
+#: pylrclibup/model/track.py:146
+#, python-brace-format
+msgid "音频文件时长无效：{filename}"
+msgstr "Audio file duration invalid: {filename}"
+
+#: pylrclibup/api/pow.py:22
+#, python-brace-format
+msgid "无效 PoW 参数：prefix={prefix}, target={target}"
+msgstr "Invalid PoW parameters: prefix={prefix}, target={target}"
+
+#: pylrclibup/api/pow.py:34
+#, python-brace-format
+msgid "找到有效 nonce: {nonce}"
+msgstr "Found valid nonce: {nonce}"
+
+#: pylrclibup/api/client.py:34
+#, python-brace-format
+msgid ""
+"{label} 时长检查：LRCLIB={rec_dur}s, 本地={local_dur}s, 差值={diff}s（<=2s，"
+"符合匹配条件）"
+msgstr ""
+"{label} duration check: LRCLIB={rec_dur}s, Local={local_dur}s, Difference={diff}s (<=2s, matches criteria)"
+
+#: pylrclibup/api/client.py:43
+#, python-brace-format
+msgid ""
+"{label} 时长检查：LRCLIB={rec_dur}s, 本地={local_dur}s, 差值={diff}s（>2s，可"
+"能不是同一首）"
+msgstr ""
+"{label} duration check: LRCLIB={rec_dur}s, Local={local_dur}s, Difference={diff}s (>2s, may not be the same track)"
+
+#: pylrclibup/api/client.py:100
+msgid "内部数据库 (/api/get-cached)"
+msgstr "Internal database (/api/get-cached)"
+
+#: pylrclibup/api/client.py:106
+msgid "外部抓取 (/api/get)"
+msgstr "External fetch (/api/get)"
+
+#: pylrclibup/api/http.py:68
+#, python-brace-format
+msgid ""
+"{label} 调用失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试: "
+"{error}"
+msgstr ""
+"{label} call failed (attempt {attempt}/{retries}), waiting {backoff:.1f}s before retry: {error}"
+
+#: pylrclibup/api/http.py:90
+#, python-brace-format
+msgid "{label} 解析 JSON 失败: {error} (status={status}, body={body})"
+msgstr "{label} failed to parse JSON: {error} (status={status}, body={body})"
+
+#: pylrclibup/api/http.py:102
+#, python-brace-format
+msgid "{label} 请求失败：HTTP {status}, body={body}"
+msgstr "{label} request failed: HTTP {status}, body={body}"
+
+#: pylrclibup/api/http.py:113
+#, python-brace-format
+msgid ""
+"{label} 请求失败：HTTP {status}, body={body}（第 {attempt}/{retries} 次），等"
+"待 {backoff:.1f}s 后重试"
+msgstr ""
+"{label} request failed: HTTP {status}, body={body} (attempt {attempt}/{retries}), waiting {backoff:.1f}s before retry"
+
+#: pylrclibup/api/publish.py:33
+msgid "请求发布令牌 (/api/request-challenge)"
+msgstr "Request publish token (/api/request-challenge)"
+
+#: pylrclibup/api/publish.py:42
+#, python-brace-format
+msgid "请求发布令牌返回异常数据：{data}"
+msgstr "Request publish token returned abnormal data: {data}"
+
+#: pylrclibup/api/publish.py:48
+#, python-brace-format
+msgid "PoW 求解失败：{error}"
+msgstr "PoW solving failed: {error}"
+
+#: pylrclibup/api/publish.py:82
+#, python-brace-format
+msgid ""
+"{label}：获取发布令牌失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s "
+"后重试"
+msgstr ""
+"{label}: Failed to get publish token (attempt {attempt}/{retries}), waiting {backoff:.1f}s before retry"
+
+#: pylrclibup/api/publish.py:105
+#, python-brace-format
+msgid ""
+"{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次），等待 "
+"{backoff:.1f}s 后重试: {error}"
+msgstr ""
+"{label} (/api/publish) call failed (attempt {attempt}/{retries}), waiting {backoff:.1f}s before retry: {error}"
+
+#: pylrclibup/api/publish.py:124
+#, python-brace-format
+msgid ""
+"{label} 失败：HTTP {status}, body={body}（4xx 错误，一般是参数或 Token 问题，"
+"不再重试）"
+msgstr ""
+"{label} failed: HTTP {status}, body={body} (4xx error, typically parameter or Token issue, will not retry)"
+
+#: pylrclibup/api/publish.py:135
+#, python-brace-format
+msgid ""
+"{label} 失败：HTTP {status}, body={body}（第 {attempt}/{retries} 次），等待 "
+"{backoff:.1f}s 后重试"
+msgstr ""
+"{label} failed: HTTP {status}, body={body} (attempt {attempt}/{retries}), waiting {backoff:.1f}s before retry"
+
+#: pylrclibup/api/publish.py:195
+msgid "上传歌词"
+msgstr "Upload lyrics"
+
+#: pylrclibup/api/publish.py:201
+msgid "上传纯音乐标记"
+msgstr "Upload instrumental marker"
+
+#: pylrclibup/fs/mover.py:60
+#, python-brace-format
+msgid "移动文件失败：{src} → {dst}：{error}"
+msgstr "Failed to move file: {src} → {dst}: {error}"
+
+#: pylrclibup/fs/cleaner.py:31
+#, python-brace-format
+msgid "已删除空目录：{dir}"
+msgstr "Deleted empty directory: {dir}"
+
+#: pylrclibup/fs/cleaner.py:33
+#, python-brace-format
+msgid "无权限删除目录：{dir}"
+msgstr "No permission to delete directory: {dir}"
+
+#: pylrclibup/fs/cleaner.py:35
+#, python-brace-format
+msgid "删除目录失败 {dir}: {error}"
+msgstr "Failed to delete directory {dir}: {error}"

@@ -1,4 +1,4 @@
-# ===== lrc/parser.py =====
+# ===== lrc/parser.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from ..logging_utils import log_warn, log_error
+from ..i18n import get_text as _
 
 
 # -------------------- 文本规范化 --------------------
@@ -138,12 +139,12 @@ def parse_lrc_file(path: Path, *, remove_translations: bool = True) -> ParsedLRC
     try:
         raw = read_text_any(path)
     except Exception as e:
-        log_error(f"读取 LRC 文件失败 {path}: {e}")
+        log_error(_("读取 LRC 文件失败 {path}: {error}").format(path=path, error=str(e)))
         return ParsedLRC(synced="", plain="", is_instrumental=False)
     
     # 容错：检查是否有有效时间戳
     if not TIMESTAMP_RE.search(raw):
-        log_warn(f"LRC 文件无有效时间戳: {path}")
+        log_warn(_("LRC 文件无有效时间戳: {path}").format(path=path))
         return ParsedLRC(synced="", plain="", is_instrumental=False)
     
     raw = raw.replace("\r\n", "\n").replace("\r", "\n")
@@ -238,7 +239,7 @@ def write_lrc_file(path: Path, content: str) -> bool:
         path.write_text(content, encoding='utf-8')
         return True
     except Exception as e:
-        log_error(f"写入 LRC 文件失败 {path}: {e}")
+        log_error(_("写入 LRC 文件失败 {path}: {error}").format(path=path, error=str(e)))
         return False
 
 
@@ -260,5 +261,5 @@ def cleanse_lrc_file(path: Path) -> bool:
         parsed = parse_lrc_file(path)
         return write_lrc_file(path, parsed.synced)
     except Exception as e:
-        log_error(f"标准化 LRC 文件失败 {path}: {e}")
+        log_error(_("标准化 LRC 文件失败 {path}: {error}").format(path=path, error=str(e)))
         return False

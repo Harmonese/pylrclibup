@@ -1,3 +1,5 @@
+# ===== api/client.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 from typing import Optional
@@ -5,6 +7,7 @@ from typing import Optional
 from ..config import AppConfig
 from ..model import TrackMeta, LyricsRecord
 from ..logging_utils import log_info, log_warn
+from ..i18n import get_text as _
 from .http import http_request_json
 from .publish import (
     upload_lyrics as _upload_lyrics_impl,
@@ -28,13 +31,21 @@ def _check_duration(meta: TrackMeta, record: dict, label: str) -> None:
     diff = abs(rec_dur_int - meta.duration)
     if diff <= 2:
         log_info(
-            f"{label} 时长检查：LRCLIB={rec_dur_int}s, "
-            f"本地={meta.duration}s, 差值={diff}s（<=2s，符合匹配条件）"
+            _("{label} 时长检查：LRCLIB={rec_dur}s, 本地={local_dur}s, 差值={diff}s（<=2s，符合匹配条件）").format(
+                label=label,
+                rec_dur=rec_dur_int,
+                local_dur=meta.duration,
+                diff=diff
+            )
         )
     else:
         log_warn(
-            f"{label} 时长检查：LRCLIB={rec_dur_int}s, "
-            f"本地={meta.duration}s, 差值={diff}s（>2s，可能不是同一首）"
+            _("{label} 时长检查：LRCLIB={rec_dur}s, 本地={local_dur}s, 差值={diff}s（>2s，可能不是同一首）").format(
+                label=label,
+                rec_dur=rec_dur_int,
+                local_dur=meta.duration,
+                diff=diff
+            )
         )
 
 
@@ -86,13 +97,13 @@ class ApiClient:
         """
         调用 /api/get-cached：只查 LRCLIB 内部数据库
         """
-        return self._api_get_common(meta, "get-cached", "内部数据库 (/api/get-cached)")
+        return self._api_get_common(meta, "get-cached", _("内部数据库 (/api/get-cached)"))
 
     def get_external(self, meta: TrackMeta) -> Optional[LyricsRecord]:
         """
         调用 /api/get：会触发 LRCLIB 对外部来源的抓取
         """
-        return self._api_get_common(meta, "get", "外部抓取 (/api/get)")
+        return self._api_get_common(meta, "get", _("外部抓取 (/api/get)"))
 
     def upload_lyrics(self, meta: TrackMeta, plain: str, synced: str) -> bool:
         """高层包装：上传带 plain+synced 的歌词"""

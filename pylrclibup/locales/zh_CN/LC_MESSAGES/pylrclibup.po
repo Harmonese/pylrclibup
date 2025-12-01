@@ -1,0 +1,149 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-12-01 19:37+0800\n"
+"PO-Revision-Date: 2025-12-01 19:37+0800\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_Hans_CN\n"
+"Language-Team: zh_Hans_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: pylrclibup/cli/main.py:67 pylrclibup/cli/main.py:80
+#: pylrclibup/processor/core.py:365 pylrclibup/processor/core.py:377
+msgid ", "
+msgstr ""
+
+#: pylrclibup/processor/core.py:342
+msgid "LRC 中检测到“纯音乐，请欣赏”等字样，将按纯音乐处理（不上传歌词内容）。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:95
+msgid "LRC 保持原地不动"
+msgstr ""
+
+#: pylrclibup/processor/core.py:93
+msgid "LRC 移动失败"
+msgstr ""
+
+#: pylrclibup/processor/core.py:323
+msgid "⚠ LRC 文件标准化失败，将继续使用原始内容"
+msgstr ""
+
+#: pylrclibup/processor/core.py:321
+msgid "✓ LRC 文件已标准化"
+msgstr ""
+
+#: pylrclibup/processor/core.py:91
+msgid "、"
+msgstr ""
+
+#: pylrclibup/processor/core.py:285
+msgid "上传失败 ×"
+msgstr ""
+
+#: pylrclibup/processor/core.py:282
+msgid "上传完成 ✓"
+msgstr ""
+
+#: pylrclibup/processor/core.py:387
+msgid "全部完成。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:111
+msgid "内部数据库已存在歌词 → 自动移动音频文件+LRC 并跳过上传（不再重复提交）"
+msgstr ""
+
+#: pylrclibup/processor/core.py:134
+msgid "外部抓取到歌词（仅供参考，可选择是否直接使用外部版本上传）："
+msgstr ""
+
+#: pylrclibup/processor/core.py:162
+msgid "外部歌词上传失败 ×"
+msgstr ""
+
+#: pylrclibup/processor/core.py:158
+msgid "外部歌词上传完成 ✓"
+msgstr ""
+
+#: pylrclibup/processor/core.py:139
+msgid "外部记录中该曲被标记为 instrumental（或两种歌词字段均为空）。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:197
+msgid "将上传空歌词（标记为纯音乐）。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:151
+msgid "将使用“纯音乐”方式上传（不包含任何歌词内容，只标记为 instrumental）。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:154
+msgid "将直接使用外部 plain+synced 歌词上传。"
+msgstr ""
+
+#: pylrclibup/cli/main.py:46
+msgid "提示：--follow 表示 LRC 跟随 MP3，不应指定独立的 LRC 输出目录"
+msgstr ""
+
+#: pylrclibup/processor/core.py:260
+msgid "根据解析结果：将按纯音乐曲目上传。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:263 pylrclibup/processor/core.py:277
+msgid "用户取消上传。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:146
+msgid "用户选择不直接使用外部歌词 → 继续尝试本地 LRC。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:207
+msgid "用户选择退出程序。"
+msgstr ""
+
+#: pylrclibup/processor/core.py:271
+msgid "纯音乐上传失败 ×"
+msgstr ""
+
+#: pylrclibup/processor/core.py:268
+msgid "纯音乐上传完成 ✓"
+msgstr ""
+
+#: pylrclibup/processor/core.py:203
+msgid "纯音乐标记上传失败 ×"
+msgstr ""
+
+#: pylrclibup/processor/core.py:200
+msgid "纯音乐标记上传完成 ✓"
+msgstr ""
+
+#: pylrclibup/processor/core.py:187
+msgid "跳过该歌曲，不上传、不移动。"
+msgstr ""
+
+#: pylrclibup/cli/main.py:45
+msgid "错误：--follow 与 --done-lrc 不能同时使用"
+msgstr ""
+
+#: pylrclibup/cli/main.py:51
+msgid "错误：-d/--default 与 -m/--match 不能同时使用"
+msgstr ""
+
+#: pylrclibup/processor/core.py:57
+msgid "音频文件移动失败，将保持原地"
+msgstr ""
+
+#: pylrclibup/api/publish.py:112
+msgid "（4xx 错误，一般是参数或 Token 问题，不再重试）"
+msgstr ""
+

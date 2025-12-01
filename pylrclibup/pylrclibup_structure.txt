@@ -16,6 +16,17 @@
 │   ├── __init__.py
 │   ├── cleaner.py
 │   └── mover.py
+├── i18n.py
+├── locales
+│   ├── en_US
+│   │   └── LC_MESSAGES
+│   │       ├── pylrclibup.mo
+│   │       └── pylrclibup.po
+│   ├── pylrclibup.pot
+│   └── zh_CN
+│       └── LC_MESSAGES
+│           ├── pylrclibup.mo
+│           └── pylrclibup.po
 ├── logging_utils.py
 ├── lrc
 │   ├── __init__.py
@@ -37,6 +48,7 @@
     ├── test_config.py
     ├── test_fs.py
     ├── test_lrc_parser.py
-    └── test_matcher.py
+    ├── test_matcher.py
+    └── test_track.py
 
-8 directories, 32 files
+13 directories, 39 files

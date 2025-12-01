@@ -3,6 +3,8 @@
 
 ===== FILE: ./config.py =====
 
+# ===== config.py（新增常量 + 更新注释）=====
+
 from __future__ import annotations
 
 import os
@@ -22,8 +24,11 @@ PREVIEW_LINES_DEFAULT = 10
 # HTTP 调用最大自动重试次数
 MAX_HTTP_RETRIES_DEFAULT = 5
 
-# 默认 User-Agent（可以在 CLI 里加个选项覆盖）
+# 默认 User-Agent
 DEFAULT_USER_AGENT = "pylrclibup (https://github.com/Harmonese/pylrclibup)"
+
+# 支持的音频文件扩展名
+SUPPORTED_AUDIO_EXTENSIONS = {".mp3", ".m4a", ".aac", ".flac", ".wav"}
 
 
 # -------------------- AppConfig --------------------
@@ -35,14 +40,14 @@ class AppConfig:
     全局配置对象：
 
     路径配置：
-    - tracks_dir: MP3 输入目录
+    - tracks_dir: 音频文件输入目录
     - lrc_dir: LRC 输入目录
-    - done_tracks_dir: MP3 输出目录（None = 原地不动）
-    - done_lrc_dir: LRC 输出目录（None = 原地不动或跟随 MP3）
+    - done_tracks_dir: 音频文件输出目录（None = 原地不动）
+    - done_lrc_dir: LRC 输出目录（None = 原地不动或跟随音频文件）
 
     行为配置（三个独立的布尔标志）：
-    - follow_mp3: LRC 是否跟随 MP3 到同一目录
-    - rename_lrc: 处理后是否将 LRC 重命名为与 MP3 同名
+    - follow_mp3: LRC 是否跟随音频文件到同一目录（保持旧名兼容性）
+    - rename_lrc: 处理后是否将 LRC 重命名为与音频文件同名
     - cleanse_lrc: 处理前是否标准化 LRC 文件
 
     其他配置：
@@ -56,7 +61,7 @@ class AppConfig:
     done_tracks_dir: Optional[Path]
     done_lrc_dir: Optional[Path]
 
-    follow_mp3: bool = False
+    follow_mp3: bool = False  # 保持旧名兼容性，实际含义是"跟随音频文件"
     rename_lrc: bool = False
     cleanse_lrc: bool = False
 
@@ -161,7 +166,7 @@ class AppConfig:
         """
         解析输出目录
         
-        返回 None 表示原地不动（或跟随 MP3，由 follow_mp3 决定）
+        返回 None 表示原地不动（或跟随音频文件，由 follow_mp3 决定）
         
         Returns:
             (done_tracks, done_lrc)
@@ -231,7 +236,7 @@ __all__ = [
 
 ===== FILE: ./processor/core.py =====
 
-# ===== processor/core.py =====
+# ===== processor/core.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -239,12 +244,13 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from ..config import AppConfig
+from ..config import AppConfig, SUPPORTED_AUDIO_EXTENSIONS
 from ..model import TrackMeta, LyricsRecord
 from ..lrc import find_lrc_for_track, parse_lrc_file, cleanse_lrc_file, ParsedLRC
 from ..api import ApiClient, upload_lyrics, upload_instrumental
 from ..fs import move_with_dedup, cleanup_empty_dirs
 from ..logging_utils import log_info, log_warn, log_error
+from ..i18n import get_text as _
 
 
 # -------------------- 预览辅助函数 --------------------
@@ -254,14 +260,14 @@ def _preview(label: str, text: str, max_lines: int) -> None:
     """预览歌词内容"""
     print(f"--- {label} ---")
     if not text:
-        print("[空]")
+        print(_("[空]"))
         print("-" * 40)
         return
     lines = text.splitlines()
     for ln in lines[:max_lines]:
         print(ln)
     if len(lines) > max_lines:
-        print(f"... 共 {len(lines)} 行")
+        print(_("... 共 {count} 行").format(count=len(lines)))
     print("-" * 40)
 
 
@@ -276,16 +282,16 @@ def move_files_after_processing(
     """
     处理完成后移动文件的统一逻辑
     """
-    # 步骤 1：移动 MP3
-    new_mp3_path = meta.path
+    # 步骤 1：移动音频文件
+    new_audio_path = meta.path
     
     if config.done_tracks_dir:
-        moved_mp3 = move_with_dedup(meta.path, config.done_tracks_dir)
-        if moved_mp3:
-            new_mp3_path = moved_mp3
-            log_info(f"MP3 已移动到：{new_mp3_path}")
+        moved_audio = move_with_dedup(meta.path, config.done_tracks_dir)
+        if moved_audio:
+            new_audio_path = moved_audio
+            log_info(_("音频文件已移动到：{path}").format(path=new_audio_path))
         else:
-            log_warn("MP3 移动失败，将保持原地")
+            log_warn(_("音频文件移动失败，将保持原地"))
     
     # 如果没有 LRC 文件，直接返回
     if not lrc_path or not lrc_path.exists():
@@ -296,14 +302,14 @@ def move_files_after_processing(
     if config.done_lrc_dir:
         lrc_target_dir = config.done_lrc_dir
     elif config.follow_mp3:
-        lrc_target_dir = new_mp3_path.parent
+        lrc_target_dir = new_audio_path.parent
     else:
         lrc_target_dir = lrc_path.parent
     
     # 步骤 3：确定 LRC 的目标文件名
     new_lrc_name = None
     if config.rename_lrc:
-        new_lrc_name = new_mp3_path.stem
+        new_lrc_name = new_audio_path.stem
     
     # 步骤 4：判断是否需要移动
     needs_move = (
@@ -316,19 +322,18 @@ def move_files_after_processing(
         if new_lrc_path:
             action = []
             if lrc_target_dir != lrc_path.parent:
-                action.append(f"移动到 {lrc_target_dir}")
+                action.append(_("移动到 {dir}").format(dir=lrc_target_dir))
             if new_lrc_name and new_lrc_name != lrc_path.stem:
-                action.append(f"重命名为 {new_lrc_path.name}")
-            log_info(f"LRC 已{'、'.join(action)}")
+                action.append(_("重命名为 {name}").format(name=new_lrc_path.name))
+            log_info(_("LRC 已{action}").format(action=_("、").join(action)))
         else:
-            log_warn("LRC 移动失败")
+            log_warn(_("LRC 移动失败"))
     else:
-        log_info("LRC 保持原地不动")
+        log_info(_("LRC 保持原地不动"))
     
     # 步骤 5：清理空目录
     cleanup_empty_dirs(config.tracks_dir)
     cleanup_empty_dirs(config.lrc_dir)
-
 
 
 # -------------------- 单曲处理辅助函数 --------------------
@@ -340,9 +345,9 @@ def _handle_cached_lyrics(
     cached: LyricsRecord,
 ) -> None:
     """处理内部数据库已有歌词的情况"""
-    log_info("内部数据库已存在歌词 → 自动移动 MP3+LRC 并跳过上传（不再重复提交）")
-    _preview("已有 plainLyrics", cached.plain, config.preview_lines)
-    _preview("已有 syncedLyrics", cached.synced, config.preview_lines)
+    log_info(_("内部数据库已存在歌词 → 自动移动音频文件+LRC 并跳过上传（不再重复提交）"))
+    _preview(_("已有 plainLyrics"), cached.plain, config.preview_lines)
+    _preview(_("已有 syncedLyrics"), cached.synced, config.preview_lines)
     
     lrc_path = find_lrc_for_track(meta, config, interactive=True)
     move_files_after_processing(config, meta, lrc_path)
@@ -363,35 +368,35 @@ def _handle_external_lyrics(
     synced_ext = external.synced
     instrumental_ext = external.instrumental
     
-    log_info("外部抓取到歌词（仅供参考，可选择是否直接使用外部版本上传）：")
-    _preview("外部 plainLyrics", plain_ext, config.preview_lines)
-    _preview("外部 syncedLyrics", synced_ext, config.preview_lines)
+    log_info(_("外部抓取到歌词（仅供参考，可选择是否直接使用外部版本上传）："))
+    _preview(_("外部 plainLyrics"), plain_ext, config.preview_lines)
+    _preview(_("外部 syncedLyrics"), synced_ext, config.preview_lines)
     
     if instrumental_ext:
-        log_info("外部记录中该曲被标记为 instrumental（或两种歌词字段均为空）。")
+        log_info(_("外部记录中该曲被标记为 instrumental（或两种歌词字段均为空）。"))
     
     # 始终询问用户
-    choice = input("是否直接使用外部版本上传？[y/N]: ").strip().lower()
+    choice = input(_("是否直接使用外部版本上传？[y/N]: ")).strip().lower()
     use_ext = choice in ("y", "yes")
     
     if not use_ext:
-        log_info("用户选择不直接使用外部歌词 → 继续尝试本地 LRC。")
+        log_info(_("用户选择不直接使用外部歌词 → 继续尝试本地 LRC。"))
         return False
     
     # 执行上传
     if instrumental_ext:
-        log_info("将使用“纯音乐”方式上传（不包含任何歌词内容，只标记为 instrumental）。")
+        log_info(_("将使用“纯音乐”方式上传（不包含任何歌词内容，只标记为 instrumental）。"))
         ok = upload_instrumental(config, meta)
     else:
-        log_info("将直接使用外部 plain+synced 歌词上传。")
+        log_info(_("将直接使用外部 plain+synced 歌词上传。"))
         ok = upload_lyrics(config, meta, plain_ext, synced_ext)
     
     if ok:
-        log_info("外部歌词上传完成 ✓")
+        log_info(_("外部歌词上传完成 ✓"))
         lrc_path = find_lrc_for_track(meta, config, interactive=True)
         move_files_after_processing(config, meta, lrc_path)
     else:
-        log_error("外部歌词上传失败 ×")
+        log_error(_("外部歌词上传失败 ×"))
     
     return True
 
@@ -408,15 +413,11 @@ def _prompt_for_missing_lrc(
     """
     while True:
         choice = input(
-            "未找到本地 LRC，选择 "
-            "[s] 跳过该歌曲 / "
-            "[m] 手动指定歌词文件 / "
-            "[i] 上传空歌词标记为纯音乐 / "
-            "[q] 退出程序: "
+            _("未找到本地 LRC，选择 [s] 跳过该歌曲 / [m] 手动指定歌词文件 / [i] 上传空歌词标记为纯音乐 / [q] 退出程序: ")
         ).strip().lower()
         
         if choice == "s":
-            log_info("跳过该歌曲，不上传、不移动。")
+            log_info(_("跳过该歌曲，不上传、不移动。"))
             return None
         
         elif choice == "m":
@@ -426,29 +427,29 @@ def _prompt_for_missing_lrc(
             # 路径无效，继续循环
         
         elif choice == "i":
-            log_info("将上传空歌词（标记为纯音乐）。")
+            log_info(_("将上传空歌词（标记为纯音乐）。"))
             ok = upload_instrumental(config, meta)
             if ok:
-                log_info("纯音乐标记上传完成 ✓")
+                log_info(_("纯音乐标记上传完成 ✓"))
                 move_files_after_processing(config, meta, lrc_path=None)
             else:
-                log_error("纯音乐标记上传失败 ×")
+                log_error(_("纯音乐标记上传失败 ×"))
             return None
         
         elif choice == "q":
-            log_info("用户选择退出程序。")
+            log_info(_("用户选择退出程序。"))
             sys.exit(1)
         
         else:
-            print("无效输入，请重新选择。")
+            print(_("无效输入，请重新选择。"))
 
 
 def _get_manual_lrc_path() -> Optional[Path]:
     """获取用户手动输入的 LRC 文件路径"""
-    manual_path_raw = input("请输入 LRC 文件的完整路径: ").strip()
+    manual_path_raw = input(_("请输入 LRC 文件的完整路径: ")).strip()
     
     if not manual_path_raw:
-        print("路径为空，请重新选择。")
+        print(_("路径为空，请重新选择。"))
         return None
     
     # 处理引号（单引号/双引号）
@@ -465,15 +466,15 @@ def _get_manual_lrc_path() -> Optional[Path]:
     lrc_path = lrc_path.resolve()
     
     if not lrc_path.exists() or not lrc_path.is_file():
-        print(f"文件不存在或不是有效文件：{lrc_path}")
+        print(_("文件不存在或不是有效文件：{path}").format(path=lrc_path))
         return None
     
     if lrc_path.suffix.lower() != ".lrc":
-        confirm = input(f"警告：文件扩展名不是 .lrc，是否继续？[y/N]: ").strip().lower()
+        confirm = input(_("警告：文件扩展名不是 .lrc，是否继续？[y/N]: ")).strip().lower()
         if confirm not in ("y", "yes"):
             return None
     
-    log_info(f"使用手动指定的歌词文件：{lrc_path}")
+    log_info(_("使用手动指定的歌词文件：{path}").format(path=lrc_path))
     return lrc_path
 
 
@@ -489,38 +490,36 @@ def _upload_local_lyrics(
     )
     
     if treat_as_instrumental:
-        log_info("根据解析结果：将按纯音乐曲目上传。")
-        choice = input("确认以纯音乐方式上传？[y/N]: ").strip().lower()
+        log_info(_("根据解析结果：将按纯音乐曲目上传。"))
+        choice = input(_("确认以纯音乐方式上传？[y/N]: ")).strip().lower()
         if choice not in ("y", "yes"):
-            log_info("用户取消上传。")
+            log_info(_("用户取消上传。"))
             return
         
         ok = upload_instrumental(config, meta)
         if ok:
-            log_info("纯音乐上传完成 ✓")
+            log_info(_("纯音乐上传完成 ✓"))
             move_files_after_processing(config, meta, lrc_path)
         else:
-            log_error("纯音乐上传失败 ×")
+            log_error(_("纯音乐上传失败 ×"))
         return
     
     # 非纯音乐 → 正常上传 plain+synced
-    choice = input("确认上传本地歌词？[y/N]: ").strip().lower()
+    choice = input(_("确认上传本地歌词？[y/N]: ")).strip().lower()
     if choice not in ("y", "yes"):
-        log_info("用户取消上传。")
+        log_info(_("用户取消上传。"))
         return
     
     ok = upload_lyrics(config, meta, parsed.plain, parsed.synced)
     if ok:
-        log_info("上传完成 ✓")
+        log_info(_("上传完成 ✓"))
         move_files_after_processing(config, meta, lrc_path)
     else:
-        log_error("上传失败 ×")
+        log_error(_("上传失败 ×"))
 
 
 # -------------------- 单曲处理逻辑 --------------------
 
-
-# ===== processor/core.py =====
 
 def process_track(
     config: AppConfig,
@@ -529,54 +528,54 @@ def process_track(
 ) -> None:
     """
     处理一首歌：
-      1. 查找本地 LRC
-      2. [可选] 标准化 LRC（如果 config.cleanse_lrc=True）
-      3. /api/get-cached 查内部数据库
-      4. /api/get 查外部歌词（可选用）
+      1. /api/get-cached 查内部数据库
+      2. /api/get 查外部歌词（可选用）
+      3. 查找本地 LRC
+      4. [可选] 标准化 LRC（如果 config.cleanse_lrc=True）
       5. LRC 解析
       6. 上传（歌词 / 纯音乐）
       7. 移动文件 & 清理空目录
     """
-    log_info(f"处理：{meta}")
+    log_info(_("处理：{meta}").format(meta=meta))
 
-    # 1. 查找本地 LRC 文件
-    lrc_path = find_lrc_for_track(meta, config, interactive=True)
-    
-    if not lrc_path:
-        log_warn(f"⚠ 未找到本地 LRC 文件：{meta.track}")
-        lrc_path = _prompt_for_missing_lrc(config, meta)
-        if not lrc_path:
-            return
-    
-    # 2. [可选] 标准化 LRC 文件（在处理开始前）
-    if config.cleanse_lrc:
-        log_info(f"正在标准化 LRC 文件：{lrc_path.name}")
-        if cleanse_lrc_file(lrc_path):
-            log_info("✓ LRC 文件已标准化")
-        else:
-            log_warn("⚠ LRC 文件标准化失败，将继续使用原始内容")
-
-    # 3. 先查内部数据库（不触发外部抓取）
+    # 1. 先查内部数据库（不触发外部抓取）
     cached: Optional[LyricsRecord] = api_client.get_cached(meta)
     if cached:
         _handle_cached_lyrics(config, meta, cached)
         return
 
-    # 4. 再查外部抓取（仅供参考，可选是否直接使用）
+    # 2. 再查外部抓取（仅供参考，可选是否直接使用）
     external: Optional[LyricsRecord] = api_client.get_external(meta)
     if external:
         handled = _handle_external_lyrics(config, meta, external)
         if handled:
             return
 
+    # 3. 查找本地 LRC 文件
+    lrc_path = find_lrc_for_track(meta, config, interactive=True)
+    
+    if not lrc_path:
+        log_warn(_("⚠ 未找到本地 LRC 文件：{track}").format(track=meta.track))
+        lrc_path = _prompt_for_missing_lrc(config, meta)
+        if not lrc_path:
+            return
+    
+    # 4. [可选] 标准化 LRC 文件（在处理开始前）
+    if config.cleanse_lrc:
+        log_info(_("正在标准化 LRC 文件：{filename}").format(filename=lrc_path.name))
+        if cleanse_lrc_file(lrc_path):
+            log_info(_("✓ LRC 文件已标准化"))
+        else:
+            log_warn(_("⚠ LRC 文件标准化失败，将继续使用原始内容"))
+
     # 5. 解析本地 LRC（已经标准化过了，直接读取）
     parsed: ParsedLRC = parse_lrc_file(lrc_path)
 
     if parsed.is_instrumental:
-        log_info("LRC 中检测到“纯音乐，请欣赏”等字样，将按纯音乐处理（不上传歌词内容）。")
+        log_info(_("LRC 中检测到“纯音乐，请欣赏”等字样，将按纯音乐处理（不上传歌词内容）。"))
 
-    _preview("本地 plainLyrics（将上传）", parsed.plain, config.preview_lines)
-    _preview("本地 syncedLyrics（将上传）", parsed.synced, config.preview_lines)
+    _preview(_("本地 plainLyrics（将上传）"), parsed.plain, config.preview_lines)
+    _preview(_("本地 syncedLyrics（将上传）"), parsed.synced, config.preview_lines)
 
     # 6. 上传歌词
     _upload_local_lyrics(config, meta, lrc_path, parsed)
@@ -587,7 +586,7 @@ def process_track(
 
 def process_all(config: AppConfig) -> None:
     """
-    入口函数：递归扫描 tracks_dir 下所有 .mp3
+    入口函数：递归扫描 tracks_dir 下所有支持的音频文件
 
     CLI 层只需要调用这一层。
     """
@@ -595,18 +594,31 @@ def process_all(config: AppConfig) -> None:
 
     metas: List[TrackMeta] = []
     
-    for p in sorted(config.tracks_dir.rglob("*.mp3")):
-        tm = TrackMeta.from_mp3(p)
-        if tm:
-            metas.append(tm)
+    # 扫描所有支持的音频格式
+    extensions_str = ", ".join(SUPPORTED_AUDIO_EXTENSIONS)
+    log_info(_("扫描音频文件：{extensions}").format(extensions=extensions_str))
+    
+    for ext in SUPPORTED_AUDIO_EXTENSIONS:
+        pattern = f"*{ext}"
+        for p in sorted(config.tracks_dir.rglob(pattern)):
+            tm = TrackMeta.from_audio_file(p)
+            if tm:
+                metas.append(tm)
 
     total = len(metas)
+    
+    if total == 0:
+        log_warn(_("未找到任何支持的音频文件（{extensions}）").format(extensions=extensions_str))
+        return
+    
+    log_info(_("共找到 {total} 个音频文件").format(total=total))
+    
     for idx, meta in enumerate(metas, 1):
-        log_info(f"[{idx}/{total}] 开始处理...")
+        log_info(_("[{idx}/{total}] 开始处理...").format(idx=idx, total=total))
         process_track(config, api_client, meta)
         print()
 
-    log_info("全部完成。")
+    log_info(_("全部完成。"))
 ./tests/test_matcher.py
 
 
@@ -1205,12 +1217,153 @@ class TestAppConfig:
         config = AppConfig.from_env_and_defaults(tracks_dir=explicit_tracks)
         
         assert config.tracks_dir == explicit_tracks
+./tests/test_track.py
+
+
+===== FILE: ./tests/test_track.py =====
+
+# ===== tests/test_track.py（完整修复版本）=====
+
+"""
+TrackMeta 多格式支持测试
+"""
+
+import pytest
+from pathlib import Path
+from unittest.mock import Mock, patch
+from pylrclibup.model import TrackMeta
+
+
+class TestTrackMetaMultiFormat:
+    """测试多格式音频文件支持"""
+    
+    @patch('pylrclibup.model.track.MutaFile')
+    def test_mp3_format(self, mock_muta, tmp_path: Path):
+        """测试 MP3 格式（ID3v2 标签）"""
+        audio_file = tmp_path / "test.mp3"
+        audio_file.touch()
+        
+        # 模拟 MP3 标签结构
+        mock_audio = Mock()
+        mock_audio.tags = {
+            "TIT2": Mock(text=["Test Song"]),
+            "TPE1": Mock(text=["Test Artist"]),
+            "TALB": Mock(text=["Test Album"]),
+        }
+        # ✅ 使用 180.6 避免银行家舍入的边界情况
+        mock_audio.info = Mock(length=180.6)
+        mock_muta.return_value = mock_audio
+        
+        result = TrackMeta.from_audio_file(audio_file)
+        
+        assert result is not None
+        assert result.track == "Test Song"
+        assert result.artist == "Test Artist"
+        assert result.album == "Test Album"
+        assert result.duration == 181
+    
+    @patch('pylrclibup.model.track.MutaFile')
+    def test_m4a_format(self, mock_muta, tmp_path: Path):
+        """测试 M4A 格式（iTunes MP4 标签）"""
+        audio_file = tmp_path / "test.m4a"
+        audio_file.touch()
+        
+        # 模拟 M4A 标签结构
+        mock_audio = Mock()
+        mock_audio.tags = {
+            "©nam": ["M4A Song"],
+            "©ART": ["M4A Artist"],
+            "©alb": ["M4A Album"],
+        }
+        mock_audio.info = Mock(length=200.0)
+        mock_muta.return_value = mock_audio
+        
+        result = TrackMeta.from_audio_file(audio_file)
+        
+        assert result is not None
+        assert result.track == "M4A Song"
+        assert result.artist == "M4A Artist"
+        assert result.album == "M4A Album"
+        assert result.duration == 200
+    
+    @patch('pylrclibup.model.track.MutaFile')
+    def test_flac_format(self, mock_muta, tmp_path: Path):
+        """测试 FLAC 格式（Vorbis Comments）"""
+        audio_file = tmp_path / "test.flac"
+        audio_file.touch()
+        
+        # 模拟 FLAC 标签结构
+        mock_audio = Mock()
+        mock_audio.tags = {
+            "TITLE": ["FLAC Song"],
+            "ARTIST": ["FLAC Artist"],
+            "ALBUM": ["FLAC Album"],
+        }
+        mock_audio.info = Mock(length=250.3)
+        mock_muta.return_value = mock_audio
+        
+        result = TrackMeta.from_audio_file(audio_file)
+        
+        assert result is not None
+        assert result.track == "FLAC Song"
+        assert result.artist == "FLAC Artist"
+        assert result.album == "FLAC Album"
+        assert result.duration == 250
+    
+    @patch('pylrclibup.model.track.MutaFile')
+    def test_missing_tags(self, mock_muta, tmp_path: Path):
+        """测试标签不完整的情况"""
+        audio_file = tmp_path / "incomplete.mp3"
+        audio_file.touch()
+        
+        mock_audio = Mock()
+        mock_audio.tags = {
+            "TIT2": Mock(text=["Only Title"]),
+            # 缺少 artist 和 album
+        }
+        mock_audio.info = Mock(length=100.0)
+        mock_muta.return_value = mock_audio
+        
+        result = TrackMeta.from_audio_file(audio_file)
+        
+        assert result is None
+    
+    @patch('pylrclibup.model.track.MutaFile')
+    def test_invalid_duration(self, mock_muta, tmp_path: Path):
+        """测试无效时长"""
+        audio_file = tmp_path / "invalid.mp3"
+        audio_file.touch()
+        
+        mock_audio = Mock()
+        mock_audio.tags = {
+            "TIT2": Mock(text=["Song"]),
+            "TPE1": Mock(text=["Artist"]),
+            "TALB": Mock(text=["Album"]),
+        }
+        mock_audio.info = Mock(length=0)  # 无效时长
+        mock_muta.return_value = mock_audio
+        
+        result = TrackMeta.from_audio_file(audio_file)
+        
+        assert result is None
+    
+    def test_from_mp3_backward_compatibility(self, tmp_path: Path):
+        """测试 from_mp3() 向后兼容性"""
+        with patch('pylrclibup.model.track.TrackMeta.from_audio_file') as mock_from_audio:
+            mock_from_audio.return_value = Mock()
+            
+            audio_file = tmp_path / "test.mp3"
+            audio_file.touch()
+            
+            result = TrackMeta.from_mp3(audio_file)
+            
+            mock_from_audio.assert_called_once_with(audio_file)
 ./__init__.py
 
 
 ===== FILE: ./__init__.py =====
 
-# ===== __init__.py =====
+# ===== pylrclibup/__init__.py =====
 
 """
 pylrclibup
@@ -1221,6 +1374,7 @@ based on track metadata from your music library (e.g. Jellyfin + MusicBrainz Pic
 
 from .config import AppConfig
 from .logging_utils import get_logger, set_log_level, log_info, log_warn, log_error
+from .i18n import setup_i18n, get_text as _  # 新增
 
 __all__ = [
     "AppConfig",
@@ -1229,9 +1383,15 @@ __all__ = [
     "log_info",
     "log_warn",
     "log_error",
+    "setup_i18n",  # 新增
+    "_",            # 新增
 ]
 
-__version__ = "0.3.0"./cli/__init__.py
+__version__ = "0.3.0"
+
+# 默认初始化 i18n（自动检测语言）
+setup_i18n()
+./cli/__init__.py
 
 
 ===== FILE: ./cli/__init__.py =====
@@ -1248,6 +1408,8 @@ __all__ = ["run_cli"]
 
 ===== FILE: ./cli/main.py =====
 
+# ===== pylrclibup/cli/main.py（完整修复版）=====
+
 from __future__ import annotations
 
 import argparse
@@ -1257,27 +1419,42 @@ from pathlib import Path
 from ..config import AppConfig
 from ..processor import process_all
 from ..logging_utils import log_info, log_error
+from ..i18n import setup_i18n, get_text as _
+
+
+def _detect_lang_from_argv() -> str:
+    """
+    从命令行参数中提前检测 --lang 参数
+    
+    在创建 ArgumentParser 之前调用，以便正确显示多语言 help
+    """
+    args = sys.argv[1:]
+    
+    # 检查 --lang 或 --language
+    for i, arg in enumerate(args):
+        if arg in ('--lang', '--language'):
+            if i + 1 < len(args):
+                return args[i + 1]
+        elif arg.startswith('--lang='):
+            return arg.split('=', 1)[1]
+        elif arg.startswith('--language='):
+            return arg.split('=', 1)[1]
+    
+    # 未指定，返回 'auto'
+    return 'auto'
 
 
 def validate_args(args) -> None:
-    """
-    验证命令行参数的冲突规则
-    
-    规则：
-    1. --follow + --done-lrc 显式指定 → 错误
-    2. -d 不能与 -m 同时使用 → 错误
-    3. -d/-m 不能与 -f/-r/-c 同时使用 → 错误
-    4. -d/-m 不能与路径参数同时使用 → 错误
-    """
+    """验证命令行参数的冲突规则"""
     # 规则 1：--follow 与 --done-lrc 冲突
     if args.follow and args.done_lrc:
-        log_error("错误：--follow 与 --done-lrc 不能同时使用")
-        log_error("提示：--follow 表示 LRC 跟随 MP3，不应指定独立的 LRC 输出目录")
+        log_error(_("错误：--follow 与 --done-lrc 不能同时使用"))
+        log_error(_("提示：--follow 表示 LRC 跟随音频文件，不应指定独立的 LRC 输出目录"))
         sys.exit(1)
     
     # 规则 2：-d 与 -m 冲突
     if args.default and args.match:
-        log_error("错误：-d/--default 与 -m/--match 不能同时使用")
+        log_error(_("错误：-d/--default 与 -m/--match 不能同时使用"))
         sys.exit(1)
     
     # 规则 3 & 4：快捷模式与其他参数冲突
@@ -1290,10 +1467,12 @@ def validate_args(args) -> None:
         if args.cleanse:
             conflicts.append("-c/--cleanse")
         if args.tracks or args.lrc or args.done_tracks or args.done_lrc:
-            conflicts.append("路径参数")
+            conflicts.append(_("路径参数"))
         
         if conflicts:
-            log_error(f"错误：-d/--default 模式不能与以下参数同时使用：{', '.join(conflicts)}")
+            log_error(_("错误：-d/--default 模式不能与以下参数同时使用：{conflicts}").format(
+                conflicts=', '.join(conflicts)
+            ))
             sys.exit(1)
     
     if args.match:
@@ -1306,7 +1485,9 @@ def validate_args(args) -> None:
             conflicts.append("-c/--cleanse")
         
         if conflicts:
-            log_error(f"错误：-m/--match 模式不能与以下参数同时使用：{', '.join(conflicts)}")
+            log_error(_("错误：-m/--match 模式不能与以下参数同时使用：{conflicts}").format(
+                conflicts=', '.join(conflicts)
+            ))
             sys.exit(1)
 
 
@@ -1314,52 +1495,94 @@ def run_cli():
     """
     pylrclibup 的命令行入口点。
     """
-
+    
+    # ========== 🌍 提前初始化 i18n ==========
+    detected_lang = _detect_lang_from_argv()
+    if detected_lang != 'auto':
+        setup_i18n(locale=detected_lang)
+    else:
+        setup_i18n()  # 自动检测系统语言
+    
+    # ========== 创建 ArgumentParser ==========
     parser = argparse.ArgumentParser(
         prog="pylrclibup",
-        description="Upload lyrics or instrumental tags to LRCLIB with local files."
+        description=_("将本地歌词文件或纯音乐标记上传到 LRCLIB。")
     )
 
     # -------------------- 路径参数 --------------------
-    parser.add_argument("--tracks", type=str,
-                        help="歌曲文件输入目录（默认：当前工作目录）")
-    parser.add_argument("--lrc", type=str,
-                        help="LRC 文件输入目录（默认：当前工作目录）")
-    parser.add_argument("--done-tracks", type=str,
-                        help="处理后歌曲文件移动到的目录（默认：原地不动）")
-    parser.add_argument("--done-lrc", type=str,
-                        help="处理后 LRC 文件移动到的目录（默认：原地不动或跟随 MP3）")
+    parser.add_argument(
+        "--tracks",
+        type=str,
+        help=_("音频文件输入目录（默认：当前工作目录）")
+    )
+    parser.add_argument(
+        "--lrc",
+        type=str,
+        help=_("LRC 文件输入目录（默认：当前工作目录）")
+    )
+    parser.add_argument(
+        "--done-tracks",
+        type=str,
+        help=_("处理后音频文件移动到的目录（默认：原地不动）")
+    )
+    parser.add_argument(
+        "--done-lrc",
+        type=str,
+        help=_("处理后 LRC 文件移动到的目录（默认：原地不动/跟随音频，取决于 --follow 设置）")
+    )
 
     # -------------------- 行为控制参数 --------------------
-    parser.add_argument("-f", "--follow", action="store_true",
-                        help="LRC 文件跟随 MP3 到同一目录（与 --done-lrc 冲突）")
-    parser.add_argument("-r", "--rename", action="store_true",
-                        help="处理后将 LRC 重命名为与 MP3 同名")
-    parser.add_argument("-c", "--cleanse", action="store_true",
-                        help="处理前标准化 LRC 文件（移除 credit、翻译等）")
+    parser.add_argument(
+        "-f", "--follow",
+        action="store_true",
+        help=_("LRC 文件跟随音频文件到同一目录（与 --done-lrc 冲突）")
+    )
+    parser.add_argument(
+        "-r", "--rename",
+        action="store_true",
+        help=_("处理后将 LRC 重命名为与音频文件同名")
+    )
+    parser.add_argument(
+        "-c", "--cleanse",
+        action="store_true",
+        help=_("处理前标准化 LRC 文件（移除制作信息、翻译等）")
+    )
 
     # -------------------- 其他参数 --------------------
-    parser.add_argument("--preview-lines", type=int, default=10,
-                        help="预览歌词时显示的行数")
+    parser.add_argument(
+        "--preview-lines",
+        type=int,
+        default=10,
+        help=_("预览歌词时显示的行数")
+    )
 
     # -------------------- 快捷模式 --------------------
     parser.add_argument(
         "-d", "--default",
         nargs=2,
         metavar=("TRACKS_DIR", "LRC_DIR"),
-        help=(
+        help=_(
             "快捷模式：等价于 --tracks TRACKS_DIR --lrc LRC_DIR --follow --rename --cleanse。"
-            "歌曲文件保持原地不动，LRC 移动到对应歌曲目录并重命名，且会标准化 LRC 文件。"
+            "音频文件保持原地不动，LRC 移动到音频目录并重命名，且会标准化 LRC 文件。"
         ),
     )
 
     parser.add_argument(
         "-m", "--match",
         action="store_true",
-        help=(
+        help=_(
             "匹配模式：等价于 --follow --rename --cleanse。"
-            "处理完成后，LRC 移动到 MP3 所在目录并重命名为与歌曲文件相同的名称，且会标准化 LRC 文件。"
+            "处理完成后，LRC 移动到音频目录并重命名为与音频文件相同的名称，且会标准化 LRC 文件。"
         ),
+    )
+
+    # -------------------- 语言选项 --------------------
+    parser.add_argument(
+        "--lang", "--language",
+        type=str,
+        choices=["zh_CN", "en_US", "auto"],
+        default="auto",
+        help=_("界面语言：zh_CN（简体中文）/ en_US（English）/ auto（自动检测）"),
     )
 
     args = parser.parse_args()
@@ -1369,14 +1592,14 @@ def run_cli():
 
     # ========== 统一处理所有模式 ==========
     
-    # 处理 -d/--default 模式（转换为普通参数）
+    # 处理 -d/--default 模式
     if args.default:
         tracks_arg, lrc_arg = args.default
         
         tracks_dir = Path(tracks_arg).resolve()
         lrc_dir = Path(lrc_arg).resolve()
-        done_tracks_dir = None  # 原地不动
-        done_lrc_dir = None     # 跟随 MP3
+        done_tracks_dir = None
+        done_lrc_dir = None
         follow_mp3 = True
         rename_lrc = True
         cleanse_lrc = True
@@ -1386,7 +1609,7 @@ def run_cli():
         tracks_dir = Path(args.tracks).resolve() if args.tracks else None
         lrc_dir = Path(args.lrc).resolve() if args.lrc else None
         done_tracks_dir = Path(args.done_tracks).resolve() if args.done_tracks else None
-        done_lrc_dir = None  # match 模式下 LRC 跟随 MP3
+        done_lrc_dir = None
         follow_mp3 = True
         rename_lrc = True
         cleanse_lrc = True
@@ -1401,7 +1624,7 @@ def run_cli():
         rename_lrc = args.rename
         cleanse_lrc = args.cleanse
 
-    # 统一创建配置
+    # 创建配置
     config = AppConfig.from_env_and_defaults(
         tracks_dir=tracks_dir,
         lrc_dir=lrc_dir,
@@ -1417,12 +1640,14 @@ def run_cli():
     try:
         process_all(config)
     except KeyboardInterrupt:
-        print("\n[INFO] 用户中断执行（Ctrl+C），已优雅退出。")
+        print("\n" + _("[信息] 用户中断执行（Ctrl+C），已优雅退出。"))
         sys.exit(0)
 ./lrc/matcher.py
 
 
 ===== FILE: ./lrc/matcher.py =====
+
+# ===== lrc/matcher.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -1432,6 +1657,7 @@ import re
 
 from ..config import AppConfig
 from ..model import TrackMeta
+from ..i18n import get_text as _
 from .parser import normalize_name
 
 
@@ -1516,17 +1742,17 @@ def find_lrc_for_track(
         return candidates[0]
 
     # 多个候选 → 交互选择
-    print("\n匹配到多个歌词文件，请选择：")
+    print("\n" + _("匹配到多个歌词文件，请选择："))
     for idx, c in enumerate(candidates, 1):
         print(f"{idx}) {c}")
 
     while True:
-        choice = input(f"请输入 1-{len(candidates)}: ").strip()
+        choice = input(_("请输入 1-{max}: ").format(max=len(candidates))).strip()
         if choice.isdigit():
             i = int(choice)
             if 1 <= i <= len(candidates):
                 return candidates[i - 1]
-        print("输入无效，请重新输入。")
+        print(_("输入无效，请重新输入。"))
 ./lrc/__init__.py
 
 
@@ -1556,7 +1782,7 @@ __all__ = [
 
 ===== FILE: ./lrc/parser.py =====
 
-# ===== lrc/parser.py =====
+# ===== lrc/parser.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -1567,6 +1793,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from ..logging_utils import log_warn, log_error
+from ..i18n import get_text as _
 
 
 # -------------------- 文本规范化 --------------------
@@ -1696,12 +1923,12 @@ def parse_lrc_file(path: Path, *, remove_translations: bool = True) -> ParsedLRC
     try:
         raw = read_text_any(path)
     except Exception as e:
-        log_error(f"读取 LRC 文件失败 {path}: {e}")
+        log_error(_("读取 LRC 文件失败 {path}: {error}").format(path=path, error=str(e)))
         return ParsedLRC(synced="", plain="", is_instrumental=False)
     
     # 容错：检查是否有有效时间戳
     if not TIMESTAMP_RE.search(raw):
-        log_warn(f"LRC 文件无有效时间戳: {path}")
+        log_warn(_("LRC 文件无有效时间戳: {path}").format(path=path))
         return ParsedLRC(synced="", plain="", is_instrumental=False)
     
     raw = raw.replace("\r\n", "\n").replace("\r", "\n")
@@ -1796,7 +2023,7 @@ def write_lrc_file(path: Path, content: str) -> bool:
         path.write_text(content, encoding='utf-8')
         return True
     except Exception as e:
-        log_error(f"写入 LRC 文件失败 {path}: {e}")
+        log_error(_("写入 LRC 文件失败 {path}: {error}").format(path=path, error=str(e)))
         return False
 
 
@@ -1818,29 +2045,66 @@ def cleanse_lrc_file(path: Path) -> bool:
         parsed = parse_lrc_file(path)
         return write_lrc_file(path, parsed.synced)
     except Exception as e:
-        log_error(f"标准化 LRC 文件失败 {path}: {e}")
+        log_error(_("标准化 LRC 文件失败 {path}: {error}").format(path=path, error=str(e)))
         return False
 ./model/track.py
 
 
 ===== FILE: ./model/track.py =====
 
+# ===== model/track.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from mutagen import File as MutaFile
 from mutagen.id3 import ID3NoHeaderError
 
-from ..logging_utils import log_warn, log_error
+from ..logging_utils import log_warn, log_error, log_debug
+from ..i18n import get_text as _
+
+
+# 各格式标签键映射（统一到 title, artist, album）
+TAG_MAPPINGS: Dict[str, Dict[str, list[str]]] = {
+    # MP3 (ID3v2)
+    "mp3": {
+        "title": ["TIT2"],
+        "artist": ["TPE1"],
+        "album": ["TALB"],
+    },
+    # M4A/AAC (iTunes MP4)
+    "m4a": {
+        "title": ["©nam", "\xa9nam"],
+        "artist": ["©ART", "\xa9ART"],
+        "album": ["©alb", "\xa9alb"],
+    },
+    "aac": {  # 同 m4a
+        "title": ["©nam", "\xa9nam"],
+        "artist": ["©ART", "\xa9ART"],
+        "album": ["©alb", "\xa9alb"],
+    },
+    # FLAC (Vorbis Comments)
+    "flac": {
+        "title": ["TITLE", "title"],
+        "artist": ["ARTIST", "artist"],
+        "album": ["ALBUM", "album"],
+    },
+    # WAV (通常使用 ID3 或无标签)
+    "wav": {
+        "title": ["TIT2", "TITLE", "title"],
+        "artist": ["TPE1", "ARTIST", "artist"],
+        "album": ["TALB", "ALBUM", "album"],
+    },
+}
 
 
 @dataclass
 class TrackMeta:
     """
-    表示一首歌曲的元数据（从 MP3 文件读取）
+    表示一首歌曲的元数据（从音频文件读取）
     """
 
     path: Path
@@ -1853,51 +2117,105 @@ class TrackMeta:
         return f"{self.artist} - {self.track} ({self.album}, {self.duration}s)"
 
     @staticmethod
-    def _get_tag(tags, key: str) -> Optional[str]:
-        """从 Mutagen 的 tag 对象中安全获取 text 字段"""
-        field = tags.get(key)
-        return field.text[0] if field and getattr(field, "text", None) else None
+    def _get_universal_tag(audio: Any, field: str, ext: str) -> Optional[str]:
+        """
+        统一的标签读取接口（支持多种音频格式）
+        
+        Args:
+            audio: Mutagen 音频对象
+            field: 字段名（title/artist/album）
+            ext: 文件扩展名（不含点，如 "mp3"）
+        
+        Returns:
+            标签值字符串，如果不存在则返回 None
+        """
+        if not audio or not audio.tags:
+            return None
+        
+        # 获取该格式对应的标签键列表
+        mapping = TAG_MAPPINGS.get(ext, {})
+        possible_keys = mapping.get(field, [])
+        
+        # 尝试所有可能的键
+        for key in possible_keys:
+            try:
+                value = audio.tags.get(key)
+                if value is None:
+                    continue
+                
+                # 处理不同格式的返回值
+                if isinstance(value, list) and value:
+                    return str(value[0])
+                elif hasattr(value, "text") and value.text:
+                    return str(value.text[0])
+                elif isinstance(value, str):
+                    return value
+                else:
+                    # 尝试直接转字符串
+                    result = str(value)
+                    if result:
+                        return result
+            except Exception as e:
+                log_debug(_("读取标签 {key} 失败: {error}").format(key=key, error=str(e)))
+                continue
+        
+        return None
 
     @classmethod
-    def from_mp3(cls, mp3_path: Path) -> Optional["TrackMeta"]:
+    def from_audio_file(cls, audio_path: Path) -> Optional["TrackMeta"]:
         """
-        从 MP3 文件读取元数据。
+        从音频文件读取元数据（支持 MP3, M4A, AAC, FLAC, WAV）
+        
         出现异常/标签不完整时返回 None。
         """
+        ext = audio_path.suffix.lower().strip(".")
+        
         try:
-            audio = MutaFile(mp3_path)
-            if audio is None or audio.tags is None:
-                log_warn(f"无法读取标签：{mp3_path.name}")
+            audio = MutaFile(audio_path)
+            if audio is None:
+                log_warn(_("无法读取音频文件：{filename}").format(filename=audio_path.name))
                 return None
         except ID3NoHeaderError:
-            log_warn(f"无 ID3 标签：{mp3_path.name}")
+            log_warn(_("音频文件无标签：{filename}").format(filename=audio_path.name))
             return None
         except Exception as e:
-            log_error(f"读取标签异常 {mp3_path.name}: {e}")
+            log_error(_("读取音频文件异常 {filename}: {error}").format(filename=audio_path.name, error=str(e)))
             return None
 
-        tags = audio.tags
-
-        track = cls._get_tag(tags, "TIT2")
-        artist = cls._get_tag(tags, "TPE1")
-        album = cls._get_tag(tags, "TALB")
+        # 使用统一接口读取标签
+        track = cls._get_universal_tag(audio, "title", ext)
+        artist = cls._get_universal_tag(audio, "artist", ext)
+        album = cls._get_universal_tag(audio, "album", ext)
 
         if not track or not artist or not album:
-            log_warn(f"标签不完整：{mp3_path.name}")
+            log_warn(_("音频文件标签不完整：{filename}").format(filename=audio_path.name))
             return None
 
-        duration = int(round(getattr(audio.info, "length", 0)))
+        # 读取时长
+        duration = 0
+        if hasattr(audio, "info") and hasattr(audio.info, "length"):
+            duration = int(round(audio.info.length))
+        
         if duration <= 0:
-            log_warn(f"时长无效：{mp3_path.name}")
+            log_warn(_("音频文件时长无效：{filename}").format(filename=audio_path.name))
             return None
 
         return cls(
-            path=mp3_path,
+            path=audio_path,
             track=track,
             artist=artist,
             album=album,
             duration=duration,
         )
+
+    @classmethod
+    def from_mp3(cls, mp3_path: Path) -> Optional["TrackMeta"]:
+        """
+        向后兼容的方法（调用 from_audio_file）
+        
+        ⚠️ 已弃用，请使用 from_audio_file()
+        """
+        return cls.from_audio_file(mp3_path)
 ./model/lyrics.py
 
 
@@ -1971,12 +2289,15 @@ __all__ = [
 
 ===== FILE: ./api/pow.py =====
 
+# ===== api/pow.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 import hashlib
 
 from ..exceptions import PoWError
 from ..logging_utils import log_info
+from ..i18n import get_text as _
 
 
 def solve_pow(prefix: str, target_hex: str) -> str:
@@ -1989,7 +2310,10 @@ def solve_pow(prefix: str, target_hex: str) -> str:
     - 返回 nonce 的十进制字符串
     """
     if not prefix or not target_hex:
-        raise PoWError(f"无效 PoW 参数：prefix={prefix!r}, target={target_hex!r}")
+        raise PoWError(_("无效 PoW 参数：prefix={prefix}, target={target}").format(
+            prefix=repr(prefix),
+            target=repr(target_hex)
+        ))
 
     target = int(target_hex, 16)
 
@@ -1998,13 +2322,15 @@ def solve_pow(prefix: str, target_hex: str) -> str:
         token_bytes = (prefix + str(nonce)).encode("utf-8")
         digest = hashlib.sha256(token_bytes).hexdigest()
         if int(digest, 16) <= target:
-            log_info(f"Found nonce: {nonce}")
+            log_info(_("找到有效 nonce: {nonce}").format(nonce=nonce))
             return str(nonce)
         nonce += 1
 ./api/client.py
 
 
 ===== FILE: ./api/client.py =====
+
+# ===== api/client.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -2013,6 +2339,7 @@ from typing import Optional
 from ..config import AppConfig
 from ..model import TrackMeta, LyricsRecord
 from ..logging_utils import log_info, log_warn
+from ..i18n import get_text as _
 from .http import http_request_json
 from .publish import (
     upload_lyrics as _upload_lyrics_impl,
@@ -2036,13 +2363,21 @@ def _check_duration(meta: TrackMeta, record: dict, label: str) -> None:
     diff = abs(rec_dur_int - meta.duration)
     if diff <= 2:
         log_info(
-            f"{label} 时长检查：LRCLIB={rec_dur_int}s, "
-            f"本地={meta.duration}s, 差值={diff}s（<=2s，符合匹配条件）"
+            _("{label} 时长检查：LRCLIB={rec_dur}s, 本地={local_dur}s, 差值={diff}s（<=2s，符合匹配条件）").format(
+                label=label,
+                rec_dur=rec_dur_int,
+                local_dur=meta.duration,
+                diff=diff
+            )
         )
     else:
         log_warn(
-            f"{label} 时长检查：LRCLIB={rec_dur_int}s, "
-            f"本地={meta.duration}s, 差值={diff}s（>2s，可能不是同一首）"
+            _("{label} 时长检查：LRCLIB={rec_dur}s, 本地={local_dur}s, 差值={diff}s（>2s，可能不是同一首）").format(
+                label=label,
+                rec_dur=rec_dur_int,
+                local_dur=meta.duration,
+                diff=diff
+            )
         )
 
 
@@ -2094,13 +2429,13 @@ class ApiClient:
         """
         调用 /api/get-cached：只查 LRCLIB 内部数据库
         """
-        return self._api_get_common(meta, "get-cached", "内部数据库 (/api/get-cached)")
+        return self._api_get_common(meta, "get-cached", _("内部数据库 (/api/get-cached)"))
 
     def get_external(self, meta: TrackMeta) -> Optional[LyricsRecord]:
         """
         调用 /api/get：会触发 LRCLIB 对外部来源的抓取
         """
-        return self._api_get_common(meta, "get", "外部抓取 (/api/get)")
+        return self._api_get_common(meta, "get", _("外部抓取 (/api/get)"))
 
     def upload_lyrics(self, meta: TrackMeta, plain: str, synced: str) -> bool:
         """高层包装：上传带 plain+synced 的歌词"""
@@ -2131,6 +2466,8 @@ __all__ = [
 
 ===== FILE: ./api/http.py =====
 
+# ===== api/http.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 import random
@@ -2142,6 +2479,7 @@ from requests import RequestException
 
 from ..config import AppConfig
 from ..logging_utils import log_info, log_warn, log_error
+from ..i18n import get_text as _
 
 
 def _calculate_backoff(attempt: int, base: float = 1.0, max_delay: float = 30.0) -> float:
@@ -2195,8 +2533,13 @@ def http_request_json(
         except RequestException as e:
             backoff = _calculate_backoff(attempt)
             log_warn(
-                f"{label} 调用失败（第 {attempt}/{retries} 次），"
-                f"等待 {backoff:.1f}s 后重试: {e}"
+                _("{label} 调用失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试: {error}").format(
+                    label=label,
+                    attempt=attempt,
+                    retries=retries,
+                    backoff=backoff,
+                    error=str(e)
+                )
             )
             if attempt == retries:
                 return None
@@ -2212,24 +2555,37 @@ def http_request_json(
                 return resp.json()
             except ValueError as e:
                 log_warn(
-                    f"{label} 解析 JSON 失败: {e} "
-                    f"(status={resp.status_code}, body={resp.text[:200]!r})"
+                    _("{label} 解析 JSON 失败: {error} (status={status}, body={body})").format(
+                        label=label,
+                        error=str(e),
+                        status=resp.status_code,
+                        body=resp.text[:200]
+                    )
                 )
                 return None
 
         # 4xx 默认认为是参数/认证问题，不重试
         if 400 <= resp.status_code < 500:
             log_warn(
-                f"{label} 请求失败：HTTP {resp.status_code}, body={resp.text[:200]!r}"
+                _("{label} 请求失败：HTTP {status}, body={body}").format(
+                    label=label,
+                    status=resp.status_code,
+                    body=resp.text[:200]
+                )
             )
             return None
 
         # 5xx → 重试
         backoff = _calculate_backoff(attempt)
         log_warn(
-            f"{label} 请求失败：HTTP {resp.status_code}, "
-            f"body={resp.text[:200]!r}（第 {attempt}/{retries} 次），"
-            f"等待 {backoff:.1f}s 后重试"
+            _("{label} 请求失败：HTTP {status}, body={body}（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试").format(
+                label=label,
+                status=resp.status_code,
+                body=resp.text[:200],
+                attempt=attempt,
+                retries=retries,
+                backoff=backoff
+            )
         )
         if attempt == retries:
             return None
@@ -2240,6 +2596,8 @@ def http_request_json(
 
 
 ===== FILE: ./api/publish.py =====
+
+# ===== api/publish.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -2253,6 +2611,7 @@ from requests import RequestException
 from ..config import AppConfig
 from ..model import TrackMeta
 from ..logging_utils import log_info, log_warn, log_error
+from ..i18n import get_text as _
 from .http import http_request_json
 from .pow import solve_pow
 
@@ -2270,7 +2629,7 @@ def request_publish_token(config: AppConfig) -> Optional[str]:
         config,
         "POST",
         url,
-        "请求发布令牌 (/api/request-challenge)",
+        _("请求发布令牌 (/api/request-challenge)"),
         treat_404_as_none=False,
     )
     if not data:
@@ -2279,13 +2638,13 @@ def request_publish_token(config: AppConfig) -> Optional[str]:
     prefix = data.get("prefix")
     target = data.get("target")
     if not prefix or not target:
-        log_error(f"请求发布令牌返回异常数据：{data}")
+        log_error(_("请求发布令牌返回异常数据：{data}").format(data=data))
         return None
 
     try:
         nonce = solve_pow(prefix, target)
     except Exception as e:
-        log_error(f"PoW 求解失败：{e}")
+        log_error(_("PoW 求解失败：{error}").format(error=str(e)))
         return None
 
     return f"{prefix}:{nonce}"
@@ -2319,8 +2678,12 @@ def publish_with_retry(
         if not token:
             backoff = _calculate_backoff(attempt)
             log_warn(
-                f"{label}：获取发布令牌失败（第 {attempt}/{retries} 次），"
-                f"等待 {backoff:.1f}s 后重试"
+                _("{label}：获取发布令牌失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试").format(
+                    label=label,
+                    attempt=attempt,
+                    retries=retries,
+                    backoff=backoff
+                )
             )
             if attempt == retries:
                 return False
@@ -2338,8 +2701,13 @@ def publish_with_retry(
         except RequestException as e:
             backoff = _calculate_backoff(attempt)
             log_warn(
-                f"{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次），"
-                f"等待 {backoff:.1f}s 后重试: {e}"
+                _("{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试: {error}").format(
+                    label=label,
+                    attempt=attempt,
+                    retries=retries,
+                    backoff=backoff,
+                    error=str(e)
+                )
             )
             if attempt == retries:
                 return False
@@ -2352,16 +2720,25 @@ def publish_with_retry(
         # 4xx: 参数/Token 错误，不再重试
         if 400 <= resp.status_code < 500:
             log_error(
-                f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
-                "（4xx 错误，一般是参数或 Token 问题，不再重试）"
+                _("{label} 失败：HTTP {status}, body={body}（4xx 错误，一般是参数或 Token 问题，不再重试）").format(
+                    label=label,
+                    status=resp.status_code,
+                    body=resp.text[:200]
+                )
             )
             return False
 
         # 5xx: 重试
         backoff = _calculate_backoff(attempt)
         log_warn(
-            f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
-            f"（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试"
+            _("{label} 失败：HTTP {status}, body={body}（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试").format(
+                label=label,
+                status=resp.status_code,
+                body=resp.text[:200],
+                attempt=attempt,
+                retries=retries,
+                backoff=backoff
+            )
         )
         if attempt == retries:
             return False
@@ -2414,13 +2791,13 @@ def upload_lyrics(
     synced: str,
 ) -> bool:
     payload = build_payload_for_publish(meta, plain, synced, force_instrumental=False)
-    return publish_with_retry(config, meta, payload, "上传歌词")
+    return publish_with_retry(config, meta, payload, _("上传歌词"))
 
 
 def upload_instrumental(config: AppConfig, meta: TrackMeta) -> bool:
     """按"纯音乐曲目"上传"""
     payload = build_payload_for_publish(meta, plain=None, synced=None, force_instrumental=True)
-    return publish_with_retry(config, meta, payload, "上传纯音乐标记")
+    return publish_with_retry(config, meta, payload, _("上传纯音乐标记"))
 ./exceptions.py
 
 
@@ -2469,10 +2846,101 @@ class InstrumentalDetected(PylrclibupError):
     标记解析过程中检测到纯音乐。
     在某些高级用法下，可能希望通过异常来中断普通歌词流程。
     """
+./i18n.py
+
+
+===== FILE: ./i18n.py =====
+
+# ===== pylrclibup/i18n.py（完整版）=====
+
+"""
+国际化 (i18n) 支持模块
+"""
+
+import gettext
+import os
+from pathlib import Path
+from typing import Optional, Callable
+
+# 全局翻译函数（类型注解）
+_translate: Callable[[str], str] = lambda x: x
+
+
+def setup_i18n(
+    locale: Optional[str] = None,
+    localedir: Optional[Path] = None,
+) -> None:
+    """
+    初始化国际化支持
+    
+    Args:
+        locale: 语言代码（如 'en_US'、'zh_CN'），None 则自动检测
+        localedir: 翻译文件目录，None 则使用默认位置
+    """
+    global _translate
+    
+    # 默认翻译文件位置
+    if localedir is None:
+        localedir = Path(__file__).parent / "locales"
+    
+    # 自动检测语言
+    if locale is None:
+        locale = _detect_locale()
+    
+    # 如果是中文（源语言），直接返回
+    if locale.startswith('zh'):
+        _translate = lambda x: x
+        return
+    
+    try:
+        # 加载翻译
+        translation = gettext.translation(
+            domain='pylrclibup',
+            localedir=str(localedir),
+            languages=[locale],
+            fallback=False,
+        )
+        _translate = translation.gettext
+    except (FileNotFoundError, OSError):
+        # 翻译文件不存在，fallback 到中文
+        _translate = lambda x: x
+
+
+def _detect_locale() -> str:
+    """
+    自动检测系统语言
+    
+    优先级：
+    1. 环境变量 PYLRCLIBUP_LANG
+    2. 环境变量 LANG / LC_ALL
+    3. 默认 zh_CN
+    """
+    # 1. 用户显式指定
+    if pylrclib_lang := os.getenv('PYLRCLIBUP_LANG'):
+        return pylrclib_lang
+    
+    # 2. 系统环境变量
+    for var in ['LANG', 'LC_ALL', 'LC_MESSAGES']:
+        if lang := os.getenv(var):
+            return lang.split('.')[0]
+    
+    # 3. 默认中文
+    return 'zh_CN'
+
+
+def get_text(message: str) -> str:
+    """获取翻译后的文本"""
+    return _translate(message)
+
+
+# 导出便捷别名
+_ = get_text
 ./fs/mover.py
 
 
 ===== FILE: ./fs/mover.py =====
+
+# ===== fs/mover.py（完整 i18n 版本）=====
 
 from __future__ import annotations
 
@@ -2480,6 +2948,7 @@ from pathlib import Path
 from typing import Optional
 
 from ..logging_utils import log_warn
+from ..i18n import get_text as _
 
 
 def move_with_dedup(
@@ -2530,7 +2999,7 @@ def move_with_dedup(
         return target
 
     except Exception as e:
-        log_warn(f"移动文件失败：{src} → {dst_dir}：{e}")
+        log_warn(_("移动文件失败：{src} → {dst}：{error}").format(src=src, dst=dst_dir, error=str(e)))
         return None
 ./fs/__init__.py
 
@@ -2553,11 +3022,14 @@ __all__ = [
 
 ===== FILE: ./fs/cleaner.py =====
 
+# ===== fs/cleaner.py（完整 i18n 版本）=====
+
 from __future__ import annotations
 
 from pathlib import Path
 
 from ..logging_utils import log_info, log_warn
+from ..i18n import get_text as _
 
 
 def cleanup_empty_dirs(root: Path) -> None:
@@ -2580,20 +3052,20 @@ def cleanup_empty_dirs(root: Path) -> None:
             # 检查目录是否为空
             if not any(d.iterdir()):
                 d.rmdir()
-                log_info(f"已删除空目录：{d}")
+                log_info(_("已删除空目录：{dir}").format(dir=d))
         except PermissionError:
-            log_warn(f"无权限删除目录：{d}")
+            log_warn(_("无权限删除目录：{dir}").format(dir=d))
         except OSError as e:
-            log_warn(f"删除目录失败 {d}: {e}")
+            log_warn(_("删除目录失败 {dir}: {error}").format(dir=d, error=str(e)))
 ./logging_utils.py
 
 
 ===== FILE: ./logging_utils.py =====
 
+# ===== pylrclibup/logging_utils.py（移除 translate 参数）=====
+
 """
 pylrclibup 统一日志模块
-
-提供全局统一的日志输出接口，替代各模块分散定义的 _log_* 函数。
 """
 
 from __future__ import annotations
@@ -2603,7 +3075,6 @@ import sys
 from typing import Optional
 
 
-# 全局 logger 实例
 _logger: Optional[logging.Logger] = None
 
 
@@ -2619,39 +3090,25 @@ def _setup_logger(
     name: str = "pylrclibup",
     level: int = logging.INFO,
 ) -> logging.Logger:
-    """
-    初始化并配置 logger
-    
-    Args:
-        name: logger 名称
-        level: 日志级别
-    
-    Returns:
-        配置好的 Logger 实例
-    """
+    """初始化并配置 logger"""
     logger = logging.getLogger(name)
     
-    # 避免重复添加 handler
     if logger.handlers:
         return logger
     
     logger.setLevel(level)
     
-    # stdout handler（INFO 及以下）
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.setLevel(logging.DEBUG)
     stdout_handler.addFilter(lambda record: record.levelno < logging.ERROR)
     stdout_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
     
-    # stderr handler（ERROR 及以上）
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(logging.ERROR)
     stderr_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
     
     logger.addHandler(stdout_handler)
     logger.addHandler(stderr_handler)
-    
-    # 阻止向上传播
     logger.propagate = False
     
     return logger
@@ -2662,24 +3119,24 @@ def set_log_level(level: int) -> None:
     get_logger().setLevel(level)
 
 
-# -------------------- 便捷函数（保持向后兼容） --------------------
+# -------------------- 便捷函数（调用方需自行翻译）--------------------
 
 
 def log_info(msg: str) -> None:
-    """输出 INFO 级别日志"""
+    """输出 INFO 级别日志（调用方需使用 _() 包裹中文）"""
     get_logger().info(msg)
 
 
 def log_warn(msg: str) -> None:
-    """输出 WARNING 级别日志"""
+    """输出 WARNING 级别日志（调用方需使用 _() 包裹中文）"""
     get_logger().warning(msg)
 
 
 def log_error(msg: str) -> None:
-    """输出 ERROR 级别日志"""
+    """输出 ERROR 级别日志（调用方需使用 _() 包裹中文）"""
     get_logger().error(msg)
 
 
 def log_debug(msg: str) -> None:
-    """输出 DEBUG 级别日志"""
+    """输出 DEBUG 级别日志（调用方需使用 _() 包裹中文）"""
     get_logger().debug(msg)
