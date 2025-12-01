@@ -24,6 +24,17 @@ class ApiResponseError(PylrclibupError):
 class LrcNotFoundError(PylrclibupError):
     """为某首歌找不到对应的 LRC 文件。"""
 
+class ApiError(PylrclibupError):
+    """API 调用相关异常"""
+    pass
+
+class ConfigError(PylrclibupError):
+    """配置相关异常"""
+    pass
+
+class LrcParseError(PylrclibupError):
+    """LRC 解析相关异常"""
+    pass
 
 class InstrumentalDetected(PylrclibupError):
     """

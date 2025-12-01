@@ -1,24 +1,19 @@
-from .parser import (
-    normalize_name,
-    ParsedLRC,
-    parse_lrc_file,
-    write_lrc_file,
-)
+# ===== lrc/__init__.py =====
 
-from .matcher import (
-    split_artists,
-    match_artists,
-    parse_lrc_filename,
-    find_lrc_for_track,
-)
+"""
+LRC 模块：解析和匹配歌词文件
+"""
+
+from .parser import parse_lrc_file, write_lrc_file, cleanse_lrc_file, ParsedLRC, normalize_name
+from .matcher import find_lrc_for_track, split_artists, match_artists
 
 __all__ = [
-    "normalize_name",
-    "ParsedLRC",
     "parse_lrc_file",
     "write_lrc_file",
+    "cleanse_lrc_file",
+    "ParsedLRC",
+    "normalize_name",
+    "find_lrc_for_track",
     "split_artists",
     "match_artists",
-    "parse_lrc_filename",
-    "find_lrc_for_track",
 ]

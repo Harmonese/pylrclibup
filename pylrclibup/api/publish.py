@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import time
 from typing import Optional, Dict, Any
 
@@ -7,22 +8,10 @@ import requests
 from requests import RequestException
 
 from ..config import AppConfig
-from ..exceptions import PublishTokenError
 from ..model import TrackMeta
+from ..logging_utils import log_info, log_warn, log_error
 from .http import http_request_json
 from .pow import solve_pow
-
-
-def _log_info(msg: str) -> None:
-    print(f"[INFO] {msg}")
-
-
-def _log_warn(msg: str) -> None:
-    print(f"[WARN] {msg}")
-
-
-def _log_error(msg: str) -> None:
-    print(f"[ERROR] {msg}")
 
 
 # -------------------- Publish Token / PoW --------------------
@@ -47,19 +36,24 @@ def request_publish_token(config: AppConfig) -> Optional[str]:
     prefix = data.get("prefix")
     target = data.get("target")
     if not prefix or not target:
-        _log_error(f"请求发布令牌返回异常数据：{data}")
+        log_error(f"请求发布令牌返回异常数据：{data}")
         return None
 
     try:
         nonce = solve_pow(prefix, target)
     except Exception as e:
-        _log_error(f"PoW 求解失败：{e}")
+        log_error(f"PoW 求解失败：{e}")
         return None
 
     return f"{prefix}:{nonce}"
 
 
 # -------------------- Publish with retry --------------------
+
+
+def _calculate_backoff(attempt: int, base: float = 1.0, max_delay: float = 30.0) -> float:
+    """计算指数退避延迟时间（带抖动）"""
+    return min(base * (2 ** (attempt - 1)) + random.uniform(0, 1), max_delay)
 
 
 def publish_with_retry(
@@ -80,12 +74,14 @@ def publish_with_retry(
     for attempt in range(1, retries + 1):
         token = request_publish_token(config)
         if not token:
-            _log_warn(
-                f"{label}：获取发布令牌失败（第 {attempt}/{retries} 次自动重试）"
+            backoff = _calculate_backoff(attempt)
+            log_warn(
+                f"{label}：获取发布令牌失败（第 {attempt}/{retries} 次），"
+                f"等待 {backoff:.1f}s 后重试"
             )
             if attempt == retries:
                 return False
-            time.sleep(1)
+            time.sleep(backoff)
             continue
 
         headers = {
@@ -97,12 +93,14 @@ def publish_with_retry(
         try:
             resp = requests.post(url, json=payload, headers=headers, timeout=30)
         except RequestException as e:
-            _log_warn(
-                f"{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次自动重试）: {e}"
+            backoff = _calculate_backoff(attempt)
+            log_warn(
+                f"{label} (/api/publish) 调用失败（第 {attempt}/{retries} 次），"
+                f"等待 {backoff:.1f}s 后重试: {e}"
             )
             if attempt == retries:
                 return False
-            time.sleep(1)
+            time.sleep(backoff)
             continue
 
         if resp.status_code == 201:
@@ -110,20 +108,21 @@ def publish_with_retry(
 
         # 4xx: 参数/Token 错误，不再重试
         if 400 <= resp.status_code < 500:
-            _log_error(
+            log_error(
                 f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
                 "（4xx 错误，一般是参数或 Token 问题，不再重试）"
             )
             return False
 
         # 5xx: 重试
-        _log_warn(
+        backoff = _calculate_backoff(attempt)
+        log_warn(
             f"{label} 失败：HTTP {resp.status_code}, body={resp.text[:200]!r} "
-            f"（第 {attempt}/{retries} 次自动重试）"
+            f"（第 {attempt}/{retries} 次），等待 {backoff:.1f}s 后重试"
         )
         if attempt == retries:
             return False
-        time.sleep(1)
+        time.sleep(backoff)
 
     return False
 
@@ -139,13 +138,7 @@ def build_payload_for_publish(
     force_instrumental: bool = False,
 ) -> Dict[str, Any]:
     """
-    构造 /api/publish 的 JSON：
-
-    - 若 force_instrumental=True 或 plain/synced 均为空/空白：
-        → 不包含 plainLyrics/syncedLyrics 字段
-        → 按官方说明：该曲目应被标记为 instrumental
-    - 否则：
-        → 同时包含 plainLyrics / syncedLyrics
+    构造 /api/publish 的 JSON
     """
     base: Dict[str, Any] = {
         "trackName": meta.track,
@@ -161,7 +154,6 @@ def build_payload_for_publish(
     s = (synced or "").strip()
 
     if not p and not s:
-        # 两个都确实空 → 也按 instrumental 处理，不附带歌词字段
         return base
 
     base["plainLyrics"] = p
@@ -169,7 +161,7 @@ def build_payload_for_publish(
     return base
 
 
-# -------------------- 高阶上传函数（给 processor 用） --------------------
+# -------------------- 高阶上传函数 --------------------
 
 
 def upload_lyrics(
@@ -178,28 +170,11 @@ def upload_lyrics(
     plain: str,
     synced: str,
 ) -> bool:
-    payload = build_payload_for_publish(
-        meta,
-        plain,
-        synced,
-        force_instrumental=False,
-    )
+    payload = build_payload_for_publish(meta, plain, synced, force_instrumental=False)
     return publish_with_retry(config, meta, payload, "上传歌词")
 
 
-def upload_instrumental(
-    config: AppConfig,
-    meta: TrackMeta,
-) -> bool:
-    """
-    按“纯音乐曲目”上传：
-      - 不传任何歌词字段
-      - 依赖服务器将其标记为 instrumental
-    """
-    payload = build_payload_for_publish(
-        meta,
-        plain=None,
-        synced=None,
-        force_instrumental=True,
-    )
+def upload_instrumental(config: AppConfig, meta: TrackMeta) -> bool:
+    """按"纯音乐曲目"上传"""
+    payload = build_payload_for_publish(meta, plain=None, synced=None, force_instrumental=True)
     return publish_with_retry(config, meta, payload, "上传纯音乐标记")

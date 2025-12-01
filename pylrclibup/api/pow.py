@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 
 from ..exceptions import PoWError
+from ..logging_utils import log_info
 
 
 def solve_pow(prefix: str, target_hex: str) -> str:
@@ -24,6 +25,6 @@ def solve_pow(prefix: str, target_hex: str) -> str:
         token_bytes = (prefix + str(nonce)).encode("utf-8")
         digest = hashlib.sha256(token_bytes).hexdigest()
         if int(digest, 16) <= target:
-            print(f"[INFO] Found nonce: {nonce}")
+            log_info(f"Found nonce: {nonce}")
             return str(nonce)
         nonce += 1

@@ -1,3 +1,10 @@
-from .core import process_track, process_all
+"""
+处理器模块：核心业务逻辑
+"""
 
-__all__ = ["process_track", "process_all"]
+from .core import process_all, process_track
+
+__all__ = [
+    "process_all",
+    "process_track",
+]

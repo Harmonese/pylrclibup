@@ -6,77 +6,58 @@ from pathlib import Path
 
 from ..config import AppConfig
 from ..processor import process_all
-from ..lrc import parse_lrc_file, write_lrc_file
+from ..logging_utils import log_info, log_error
 
 
-def _log_info(msg: str) -> None:
-    print(f"[INFO] {msg}")
-
-def _log_error(msg: str) -> None:
-    print(f"[ERROR] {msg}", file=sys.stderr)
-
-def parse_lrc_mode(target: Path) -> None:
+def validate_args(args) -> None:
     """
-    -p/--parse 模式：标准化 LRC 文件或目录中的所有 LRC 文件
+    验证命令行参数的冲突规则
     
-    Args:
-        target: LRC 文件路径或包含 LRC 的目录
+    规则：
+    1. --follow + --done-lrc 显式指定 → 错误
+    2. -d 不能与 -m 同时使用 → 错误
+    3. -d/-m 不能与 -f/-r/-c 同时使用 → 错误
+    4. -d/-m 不能与路径参数同时使用 → 错误
     """
-    if not target.exists():
-        _log_error(f"路径不存在：{target}")
+    # 规则 1：--follow 与 --done-lrc 冲突
+    if args.follow and args.done_lrc:
+        log_error("错误：--follow 与 --done-lrc 不能同时使用")
+        log_error("提示：--follow 表示 LRC 跟随 MP3，不应指定独立的 LRC 输出目录")
         sys.exit(1)
     
-    # 单个文件
-    if target.is_file():
-        if target.suffix.lower() != ".lrc":
-            _log_error(f"不是 LRC 文件：{target}")
+    # 规则 2：-d 与 -m 冲突
+    if args.default and args.match:
+        log_error("错误：-d/--default 与 -m/--match 不能同时使用")
+        sys.exit(1)
+    
+    # 规则 3 & 4：快捷模式与其他参数冲突
+    if args.default:
+        conflicts = []
+        if args.follow:
+            conflicts.append("-f/--follow")
+        if args.rename:
+            conflicts.append("-r/--rename")
+        if args.cleanse:
+            conflicts.append("-c/--cleanse")
+        if args.tracks or args.lrc or args.done_tracks or args.done_lrc:
+            conflicts.append("路径参数")
+        
+        if conflicts:
+            log_error(f"错误：-d/--default 模式不能与以下参数同时使用：{', '.join(conflicts)}")
             sys.exit(1)
-        
-        _log_info(f"标准化 LRC 文件：{target}")
-        try:
-            parsed = parse_lrc_file(target)
-            if write_lrc_file(target, parsed.synced):
-                _log_info(f"✓ 成功标准化：{target.name}")
-                if parsed.is_instrumental:
-                    _log_info("  → 检测到纯音乐标记")
-            else:
-                _log_error(f"✗ 写入失败：{target.name}")
-        except Exception as e:
-            _log_error(f"✗ 处理失败：{target.name} - {e}")
-        return
     
-    # 目录：递归处理
-    if target.is_dir():
-        lrc_files = sorted(target.rglob("*.lrc"))
-        if not lrc_files:
-            _log_info(f"未找到任何 LRC 文件：{target}")
-            return
+    if args.match:
+        conflicts = []
+        if args.follow:
+            conflicts.append("-f/--follow")
+        if args.rename:
+            conflicts.append("-r/--rename")
+        if args.cleanse:
+            conflicts.append("-c/--cleanse")
         
-        _log_info(f"找到 {len(lrc_files)} 个 LRC 文件，开始批量标准化...")
-        
-        success = 0
-        failed = 0
-        
-        for lrc_path in lrc_files:
-            try:
-                parsed = parse_lrc_file(lrc_path)
-                if write_lrc_file(lrc_path, parsed.synced):
-                    success += 1
-                    _log_info(f"✓ [{success}/{len(lrc_files)}] {lrc_path.name}")
-                    if parsed.is_instrumental:
-                        _log_info(f"  → 检测到纯音乐")
-                else:
-                    failed += 1
-                    _log_error(f"✗ 写入失败：{lrc_path.name}")
-            except Exception as e:
-                failed += 1
-                _log_error(f"✗ 处理失败：{lrc_path.name} - {e}")
-        
-        _log_info(f"\n标准化完成：成功 {success} 个，失败 {failed} 个")
-        return
-    
-    _log_error(f"无效路径类型：{target}")
-    sys.exit(1)
+        if conflicts:
+            log_error(f"错误：-m/--match 模式不能与以下参数同时使用：{', '.join(conflicts)}")
+            sys.exit(1)
 
 
 def run_cli():
@@ -89,133 +70,102 @@ def run_cli():
         description="Upload lyrics or instrumental tags to LRCLIB with local files."
     )
 
-    # 基础选项
-    parser.add_argument("--yes", action="store_true",
-                        help="不询问确认，默认选择上传或使用外部歌词")
-
-    parser.add_argument("--dry-run", action="store_true",
-                        help="仅预览，不执行任何上传和移动")
-
-    parser.add_argument("--single", type=str,
-                        help="只处理指定文件（相对于 --tracks 目录），例如 'foo.mp3'")
-
-    # ⭐ 新的路径参数（移除 --root，所有默认为 cwd）
+    # -------------------- 路径参数 --------------------
     parser.add_argument("--tracks", type=str,
                         help="歌曲文件输入目录（默认：当前工作目录）")
     parser.add_argument("--lrc", type=str,
                         help="LRC 文件输入目录（默认：当前工作目录）")
     parser.add_argument("--done-tracks", type=str,
-                        help="处理后歌曲文件移动到的目录（默认：与 --tracks 相同）")
+                        help="处理后歌曲文件移动到的目录（默认：原地不动）")
     parser.add_argument("--done-lrc", type=str,
-                        help="处理后 LRC 文件移动到的目录（默认：与 --lrc 相同）")
+                        help="处理后 LRC 文件移动到的目录（默认：原地不动/跟随 MP3，取决于--follow 的设置）")
 
+    # -------------------- 行为控制参数 --------------------
+    parser.add_argument("-f", "--follow", action="store_true",
+                        help="LRC 文件跟随 MP3 到同一目录（与 --done-lrc 冲突）")
+    parser.add_argument("-r", "--rename", action="store_true",
+                        help="处理后将 LRC 重命名为与 MP3 同名")
+    parser.add_argument("-c", "--cleanse", action="store_true",
+                        help="处理前标准化 LRC 文件（移除 credit、翻译等）")
+
+    # -------------------- 其他参数 --------------------
     parser.add_argument("--preview-lines", type=int, default=10,
                         help="预览歌词时显示的行数")
 
-    # ⭐ -d/--default 模式
+    # -------------------- 快捷模式 --------------------
     parser.add_argument(
         "-d", "--default",
         nargs=2,
         metavar=("TRACKS_DIR", "LRC_DIR"),
         help=(
-            "默认模式：使用指定歌曲目录和歌词目录，完整执行上传流程，"
-            "但歌曲文件保持原地不动，匹配和使用过的 LRC 会被移动到对应歌曲文件所在目录。"
+            "快捷模式：等价于 --tracks TRACKS_DIR --lrc LRC_DIR --follow --rename --cleanse。"
+            "歌曲文件保持原地不动，LRC 移动到对应歌曲目录并重命名，且会标准化 LRC 文件。"
         ),
     )
 
-    # ⭐ -p/--parse 模式
-    parser.add_argument(
-        "-p", "--parse",
-        type=str,
-        metavar="PATH",
-        help=(
-            "解析模式：对指定的 LRC 文件或目录中的所有 LRC 文件进行标准化处理。"
-            "如果是文件，直接标准化该文件；如果是目录，递归处理所有 .lrc 文件。"
-        ),
-    )
-
-    # ⭐ 新增：-m/--match 模式
     parser.add_argument(
         "-m", "--match",
         action="store_true",
         help=(
-            "匹配模式：处理完成后，将 LRC 文件移动到 --done-tracks 目录"
-            "（而不是 --done-lrc），并重命名为与歌曲文件相同的名称。"
+            "匹配模式：等价于 --follow --rename --cleanse。"
+            "处理完成后，LRC 移动到 MP3 所在目录并重命名为与歌曲文件相同的名称，且会标准化 LRC 文件。"
         ),
     )
 
     args = parser.parse_args()
 
-    # ========== 模式零：-p/--parse 解析模式 ==========
-    if args.parse is not None:
-        target_path = Path(args.parse).resolve()
-        try:
-            parse_lrc_mode(target_path)
-        except KeyboardInterrupt:
-            print("\n[INFO] 用户中断执行（Ctrl+C），已优雅退出。")
-            sys.exit(0)
-        return
+    # ========== 参数冲突检查 ==========
+    validate_args(args)
 
-    # ========== 模式一：-d/--default 模式 ==========
-    if args.default is not None:
+    # ========== 统一处理所有模式 ==========
+    
+    # 处理 -d/--default 模式（转换为普通参数）
+    if args.default:
         tracks_arg, lrc_arg = args.default
-
-        # ⭐ 不再使用 --root，直接解析路径
+        
         tracks_dir = Path(tracks_arg).resolve()
         lrc_dir = Path(lrc_arg).resolve()
+        done_tracks_dir = None  # 原地不动
+        done_lrc_dir = None     # 跟随 MP3
+        follow_mp3 = True
+        rename_lrc = True
+        cleanse_lrc = True
+    
+    # 处理 -m/--match 模式
+    elif args.match:
+        tracks_dir = Path(args.tracks).resolve() if args.tracks else None
+        lrc_dir = Path(args.lrc).resolve() if args.lrc else None
+        done_tracks_dir = Path(args.done_tracks).resolve() if args.done_tracks else None
+        done_lrc_dir = None  # match 模式下 LRC 跟随 MP3
+        follow_mp3 = True
+        rename_lrc = True
+        cleanse_lrc = True
+    
+    # 普通模式
+    else:
+        tracks_dir = Path(args.tracks).resolve() if args.tracks else None
+        lrc_dir = Path(args.lrc).resolve() if args.lrc else None
+        done_tracks_dir = Path(args.done_tracks).resolve() if args.done_tracks else None
+        done_lrc_dir = Path(args.done_lrc).resolve() if args.done_lrc else None
+        follow_mp3 = args.follow
+        rename_lrc = args.rename
+        cleanse_lrc = args.cleanse
 
-        # 提示：-d 模式强制非 dry-run 且必须人工确认
-        if args.dry_run or args.yes:
-            print("[WARN] -d 模式下会忽略 --dry-run 和 --yes，始终进行真实上传并需要人工确认。")
-
-        # 忽略 -m 参数
-        if args.match:
-            print("[WARN] -d 模式下会忽略 -m/--match 参数。")
-
-        # 构建配置：注意这里开启 pair_lrc_with_track_dir
-        config = AppConfig.from_env_and_defaults(
-            tracks_dir=tracks_dir,
-            lrc_dir=lrc_dir,
-            done_tracks_dir=Path.cwd(),  # -d 模式不使用 done 目录
-            done_lrc_dir=Path.cwd(),
-            preview_lines=args.preview_lines,
-            pair_lrc_with_track_dir=True,  # ⭐ 核心
-            match_mode=False,
-        )
-
-        try:
-            # -d 模式：强制 auto_yes=False, dry_run=False
-            process_all(
-                config,
-                auto_yes=False,
-                dry_run=False,
-                single=args.single,
-            )
-        except KeyboardInterrupt:
-            print("\n[INFO] 用户中断执行（Ctrl+C），已优雅退出。")
-            sys.exit(0)
-
-        return
-
-    # ========== 模式二：普通模式 / -m 模式 ==========
-    # ⭐ 新逻辑：done_*_dir 不再在 CLI 层设置默认值，交给 config 层处理
-
-    tracks_dir = Path(args.tracks).resolve() if args.tracks else None
-    lrc_dir = Path(args.lrc).resolve() if args.lrc else None
-    done_tracks_dir = Path(args.done_tracks).resolve() if args.done_tracks else None
-    done_lrc_dir = Path(args.done_lrc).resolve() if args.done_lrc else None
-
+    # 统一创建配置
     config = AppConfig.from_env_and_defaults(
         tracks_dir=tracks_dir,
         lrc_dir=lrc_dir,
         done_tracks_dir=done_tracks_dir,
         done_lrc_dir=done_lrc_dir,
+        follow_mp3=follow_mp3,
+        rename_lrc=rename_lrc,
+        cleanse_lrc=cleanse_lrc,
         preview_lines=args.preview_lines,
-        match_mode=args.match,
     )
 
+    # 执行处理
     try:
-        process_all(config, auto_yes=args.yes, dry_run=args.dry_run, single=args.single)
+        process_all(config)
     except KeyboardInterrupt:
         print("\n[INFO] 用户中断执行（Ctrl+C），已优雅退出。")
         sys.exit(0)

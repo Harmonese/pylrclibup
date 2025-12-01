@@ -1,13 +1,12 @@
+"""
+API 模块：与 LRCLIB 交互
+"""
+
 from .client import ApiClient
-from .publish import (
-    build_payload_for_publish,
-    upload_lyrics,
-    upload_instrumental,
-)
+from .publish import upload_lyrics, upload_instrumental
 
 __all__ = [
     "ApiClient",
-    "build_payload_for_publish",
     "upload_lyrics",
     "upload_instrumental",
 ]

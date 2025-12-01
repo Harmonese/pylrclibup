@@ -1,36 +1,47 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, Any
 
 
 @dataclass
 class LyricsRecord:
     """
-    表示从 LRCLIB API（/api/get /api/get-cached 等）获得的歌词记录。
+    表示从 LRCLIB API 返回的歌词记录
     """
-
-    track_name: str
-    artist_name: str
-    album_name: str
-    duration: int
 
     plain: str
     synced: str
     instrumental: bool
 
     @classmethod
-    def from_api(cls, data: dict) -> "LyricsRecord":
+    def from_api(cls, data: Dict[str, Any]) -> "LyricsRecord":
+        """
+        从 API 返回的 JSON 构造 LyricsRecord
+        
+        API 返回格式：
+        {
+            "plainLyrics": "...",
+            "syncedLyrics": "...",
+            "instrumental": false,
+            ...
+        }
+        """
         plain = data.get("plainLyrics") or ""
         synced = data.get("syncedLyrics") or ""
-        instrumental = bool(data.get("instrumental")) or (not plain and not synced)
-
+        instrumental = bool(data.get("instrumental", False))
+        
+        # 如果两个歌词字段都为空且没有明确标记 instrumental，
+        # 也视为纯音乐
+        if not plain.strip() and not synced.strip() and not instrumental:
+            instrumental = True
+        
         return cls(
-            track_name=data.get("trackName") or "",
-            artist_name=data.get("artistName") or "",
-            album_name=data.get("albumName") or "",
-            duration=int(data.get("duration", 0)),
             plain=plain,
             synced=synced,
             instrumental=instrumental,
         )
+
+    def is_empty(self) -> bool:
+        """判断歌词是否为空"""
+        return not self.plain.strip() and not self.synced.strip()

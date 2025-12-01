@@ -15,8 +15,8 @@
 ├── fs
 │   ├── __init__.py
 │   ├── cleaner.py
-│   ├── mover.py
-│   └── paths.py
+│   └── mover.py
+├── logging_utils.py
 ├── lrc
 │   ├── __init__.py
 │   ├── matcher.py
@@ -28,7 +28,15 @@
 ├── processor
 │   ├── __init__.py
 │   └── core.py
+├── py.typed
 ├── pylrclibup_all_py_files.txt
-└── pylrclibup_structure.txt
+├── pylrclibup_structure.txt
+└── tests
+    ├── __init__.py
+    ├── conftest.py
+    ├── test_config.py
+    ├── test_fs.py
+    ├── test_lrc_parser.py
+    └── test_matcher.py
 
-7 directories, 25 files
+8 directories, 32 files

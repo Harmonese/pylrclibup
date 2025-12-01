@@ -4,6 +4,8 @@ pyproject.toml
 pylrclibup/__init__.py
 pylrclibup/config.py
 pylrclibup/exceptions.py
+pylrclibup/logging_utils.py
+pylrclibup/py.typed
 pylrclibup.egg-info/PKG-INFO
 pylrclibup.egg-info/SOURCES.txt
 pylrclibup.egg-info/dependency_links.txt
@@ -20,7 +22,6 @@ pylrclibup/cli/main.py
 pylrclibup/fs/__init__.py
 pylrclibup/fs/cleaner.py
 pylrclibup/fs/mover.py
-pylrclibup/fs/paths.py
 pylrclibup/lrc/__init__.py
 pylrclibup/lrc/matcher.py
 pylrclibup/lrc/parser.py

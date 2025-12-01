@@ -1,3 +1,5 @@
+# ===== __init__.py =====
+
 """
 pylrclibup
 
@@ -6,7 +8,15 @@ based on track metadata from your music library (e.g. Jellyfin + MusicBrainz Pic
 """
 
 from .config import AppConfig
+from .logging_utils import get_logger, set_log_level, log_info, log_warn, log_error
 
-__all__ = ["AppConfig"]
+__all__ = [
+    "AppConfig",
+    "get_logger",
+    "set_log_level",
+    "log_info",
+    "log_warn",
+    "log_error",
+]
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
