@@ -2851,7 +2851,7 @@ class InstrumentalDetected(PylrclibupError):
 
 ===== FILE: ./i18n.py =====
 
-# ===== pylrclibup/i18n.py（完整版）=====
+# ===== pylrclibup/i18n.py（智能默认语言版本）=====
 
 """
 国际化 (i18n) 支持模块
@@ -2859,6 +2859,7 @@ class InstrumentalDetected(PylrclibupError):
 
 import gettext
 import os
+import locale as system_locale
 from pathlib import Path
 from typing import Optional, Callable
 
@@ -2887,22 +2888,24 @@ def setup_i18n(
     if locale is None:
         locale = _detect_locale()
     
-    # 如果是中文（源语言），直接返回
+    # 只有中文环境才使用源码（中文）
     if locale.startswith('zh'):
         _translate = lambda x: x
         return
     
+    # 非中文环境：尝试加载英文翻译
     try:
-        # 加载翻译
         translation = gettext.translation(
             domain='pylrclibup',
             localedir=str(localedir),
-            languages=[locale],
+            languages=[locale, 'en_US', 'en'],  # fallback chain
             fallback=False,
         )
         _translate = translation.gettext
     except (FileNotFoundError, OSError):
-        # 翻译文件不存在，fallback 到中文
+        # 翻译文件不存在，fallback 中文（返回原始 key）
+        # 由于源码是中文，这里实际会显示中文
+        # 所以我们需要确保 en_US 翻译文件存在
         _translate = lambda x: x
 
 
@@ -2910,10 +2913,14 @@ def _detect_locale() -> str:
     """
     自动检测系统语言
     
-    优先级：
-    1. 环境变量 PYLRCLIBUP_LANG
-    2. 环境变量 LANG / LC_ALL
-    3. 默认 zh_CN
+    检测策略（优先级从高到低）：
+    1. 环境变量 PYLRCLIBUP_LANG（用户显式指定）
+    2. 环境变量 LANG / LC_ALL / LC_MESSAGES（系统环境）
+    3. Python locale 模块检测
+    4. ⭐ 默认英语（国际化项目的最佳实践）
+    
+    Returns:
+        语言代码（如 'en_US', 'zh_CN'）
     """
     # 1. 用户显式指定
     if pylrclib_lang := os.getenv('PYLRCLIBUP_LANG'):
@@ -2922,10 +2929,19 @@ def _detect_locale() -> str:
     # 2. 系统环境变量
     for var in ['LANG', 'LC_ALL', 'LC_MESSAGES']:
         if lang := os.getenv(var):
+            # 处理格式：en_US.UTF-8 → en_US
             return lang.split('.')[0]
     
-    # 3. 默认中文
-    return 'zh_CN'
+    # 3. 使用 Python locale 模块检测
+    try:
+        detected = system_locale.getdefaultlocale()[0]
+        if detected:
+            return detected
+    except Exception:
+        pass
+    
+    # 4. 默认英语
+    return 'en_US'
 
 
 def get_text(message: str) -> str:

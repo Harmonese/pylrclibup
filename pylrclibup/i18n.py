@@ -35,12 +35,12 @@ def setup_i18n(
     if locale is None:
         locale = _detect_locale()
     
-    # ⭐ 核心逻辑：只有中文环境才使用源码（中文）
+    # 只有中文环境才使用源码（中文）
     if locale.startswith('zh'):
         _translate = lambda x: x
         return
     
-    # ⭐ 非中文环境：尝试加载英文翻译
+    # 非中文环境：尝试加载英文翻译
     try:
         translation = gettext.translation(
             domain='pylrclibup',

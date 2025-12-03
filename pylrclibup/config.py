@@ -25,6 +25,8 @@ DEFAULT_USER_AGENT = "pylrclibup (https://github.com/Harmonese/pylrclibup)"
 # 支持的音频文件扩展名
 SUPPORTED_AUDIO_EXTENSIONS = {".mp3", ".m4a", ".aac", ".flac", ".wav"}
 
+# 支持的 YAML 元数据扩展名
+SUPPORTED_YAML_EXTENSIONS = {".yaml", ".yml"}
 
 # -------------------- AppConfig --------------------
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pylrclibup 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/Harmonese/pylrclibup/issues\n"
-"POT-Creation-Date: 2025-12-01 20:17+0800\n"
+"POT-Creation-Date: 2025-12-03 22:23+0800\n"
 "PO-Revision-Date: 2025-12-01 20:23+0800\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en_US\n"
@@ -18,254 +18,265 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: pylrclibup/processor/core.py:25
+#: pylrclibup/processor/core.py:26
 msgid "[空]"
 msgstr "[Empty]"
 
-#: pylrclibup/processor/core.py:32
+#: pylrclibup/processor/core.py:33
 #, python-brace-format
 msgid "... 共 {count} 行"
 msgstr "... {count} lines in total"
 
-#: pylrclibup/processor/core.py:54
+#: pylrclibup/processor/core.py:88
 #, python-brace-format
 msgid "音频文件已移动到：{path}"
 msgstr "Audio file moved to: {path}"
 
-#: pylrclibup/processor/core.py:56
+#: pylrclibup/processor/core.py:90
 msgid "音频文件移动失败，将保持原地"
 msgstr "Failed to move audio file, will keep in place"
 
-#: pylrclibup/processor/core.py:87
+#: pylrclibup/processor/core.py:122
 #, python-brace-format
 msgid "移动到 {dir}"
 msgstr "Moved to {dir}"
 
-#: pylrclibup/processor/core.py:89
+#: pylrclibup/processor/core.py:124
 #, python-brace-format
 msgid "重命名为 {name}"
 msgstr "Renamed to {name}"
 
-#: pylrclibup/processor/core.py:90
+#: pylrclibup/processor/core.py:125
 #, python-brace-format
 msgid "LRC 已{action}"
 msgstr "LRC {action}"
 
-#: pylrclibup/processor/core.py:90
+#: pylrclibup/processor/core.py:125
 msgid "、"
 msgstr ", "
 
-#: pylrclibup/processor/core.py:92
+#: pylrclibup/processor/core.py:127
 msgid "LRC 移动失败"
 msgstr "Failed to move LRC file"
 
-#: pylrclibup/processor/core.py:94
+#: pylrclibup/processor/core.py:129
 msgid "LRC 保持原地不动"
 msgstr "LRC file kept in place"
 
-#: pylrclibup/processor/core.py:110
+#: pylrclibup/processor/core.py:147
 msgid "内部数据库已存在歌词 → 自动移动音频文件+LRC 并跳过上传（不再重复提交）"
 msgstr ""
 "Lyrics already exist in internal database → Auto-move audio file + LRC "
 "and skip upload (no duplicate submission)"
 
-#: pylrclibup/processor/core.py:111
+#: pylrclibup/processor/core.py:148
 msgid "已有 plainLyrics"
 msgstr "Existing plainLyrics"
 
-#: pylrclibup/processor/core.py:112
+#: pylrclibup/processor/core.py:149
 msgid "已有 syncedLyrics"
 msgstr "Existing syncedLyrics"
 
-#: pylrclibup/processor/core.py:133
+#: pylrclibup/processor/core.py:173
 msgid "外部抓取到歌词（仅供参考，可选择是否直接使用外部版本上传）："
 msgstr ""
 "External lyrics fetched (for reference only, you may choose whether to "
 "upload the external version directly):"
 
-#: pylrclibup/processor/core.py:134
+#: pylrclibup/processor/core.py:174
 msgid "外部 plainLyrics"
 msgstr "External plainLyrics"
 
-#: pylrclibup/processor/core.py:135
+#: pylrclibup/processor/core.py:175
 msgid "外部 syncedLyrics"
 msgstr "External syncedLyrics"
 
-#: pylrclibup/processor/core.py:138
+#: pylrclibup/processor/core.py:178
 msgid "外部记录中该曲被标记为 instrumental（或两种歌词字段均为空）。"
 msgstr ""
 "This track is marked as instrumental in external records (or both lyric "
 "fields are empty)."
 
-#: pylrclibup/processor/core.py:141
+#: pylrclibup/processor/core.py:181
 msgid "是否直接使用外部版本上传？[y/N]: "
 msgstr "Upload using external version directly? [y/N]: "
 
-#: pylrclibup/processor/core.py:145
+#: pylrclibup/processor/core.py:185
 msgid "用户选择不直接使用外部歌词 → 继续尝试本地 LRC。"
 msgstr "User chose not to use external lyrics directly → Continue with local LRC."
 
-#: pylrclibup/processor/core.py:150
-msgid "将使用\"纯音乐\"方式上传（不包含任何歌词内容，只标记为 instrumental）。"
+#: pylrclibup/processor/core.py:190
+#, fuzzy
+msgid "将使用“纯音乐”方式上传（不包含任何歌词内容，只标记为 instrumental）。"
 msgstr ""
 "Will upload as instrumental (no lyrics content, only marked as "
 "instrumental)."
 
-#: pylrclibup/processor/core.py:153
+#: pylrclibup/processor/core.py:193
 msgid "将直接使用外部 plain+synced 歌词上传。"
 msgstr "Will upload directly using external plain + synced lyrics."
 
-#: pylrclibup/processor/core.py:157
+#: pylrclibup/processor/core.py:197
 msgid "外部歌词上传完成 ✓"
 msgstr "External lyrics upload completed ✓"
 
-#: pylrclibup/processor/core.py:161
+#: pylrclibup/processor/core.py:202
 msgid "外部歌词上传失败 ×"
 msgstr "External lyrics upload failed ×"
 
-#: pylrclibup/processor/core.py:178
+#: pylrclibup/processor/core.py:219
 msgid "未找到本地 LRC，选择 [s] 跳过该歌曲 / [m] 手动指定歌词文件 / [i] 上传空歌词标记为纯音乐 / [q] 退出程序: "
 msgstr ""
 "Local LRC not found, choose [s] Skip this song / [m] Manually specify "
 "lyrics file / [i] Upload empty lyrics as instrumental / [q] Quit program:"
 " "
 
-#: pylrclibup/processor/core.py:182
+#: pylrclibup/processor/core.py:223
 msgid "跳过该歌曲，不上传、不移动。"
 msgstr "Skip this song, no upload, no move."
 
-#: pylrclibup/processor/core.py:192
+#: pylrclibup/processor/core.py:233
 msgid "将上传空歌词（标记为纯音乐）。"
 msgstr "Will upload empty lyrics (marked as instrumental)."
 
-#: pylrclibup/processor/core.py:195
+#: pylrclibup/processor/core.py:236
 msgid "纯音乐标记上传完成 ✓"
 msgstr "Instrumental marker upload completed ✓"
 
-#: pylrclibup/processor/core.py:198
+#: pylrclibup/processor/core.py:239
 msgid "纯音乐标记上传失败 ×"
 msgstr "Instrumental marker upload failed ×"
 
-#: pylrclibup/processor/core.py:202
+#: pylrclibup/processor/core.py:243
 msgid "用户选择退出程序。"
 msgstr "User chose to exit program."
 
-#: pylrclibup/processor/core.py:206
+#: pylrclibup/processor/core.py:247
 msgid "无效输入，请重新选择。"
 msgstr "Invalid input, please choose again."
 
-#: pylrclibup/processor/core.py:211
+#: pylrclibup/processor/core.py:252
 msgid "请输入 LRC 文件的完整路径: "
 msgstr "Please enter the full path of the LRC file: "
 
-#: pylrclibup/processor/core.py:214
+#: pylrclibup/processor/core.py:255
 msgid "路径为空，请重新选择。"
 msgstr "Path is empty, please choose again."
 
-#: pylrclibup/processor/core.py:231
+#: pylrclibup/processor/core.py:272
 #, python-brace-format
 msgid "文件不存在或不是有效文件：{path}"
 msgstr "File does not exist or is not a valid file: {path}"
 
-#: pylrclibup/processor/core.py:235
+#: pylrclibup/processor/core.py:276
 msgid "警告：文件扩展名不是 .lrc，是否继续？[y/N]: "
 msgstr "Warning: File extension is not .lrc, continue? [y/N]: "
 
-#: pylrclibup/processor/core.py:239
+#: pylrclibup/processor/core.py:280
 #, python-brace-format
 msgid "使用手动指定的歌词文件：{path}"
 msgstr "Using manually specified lyrics file: {path}"
 
-#: pylrclibup/processor/core.py:255
+#: pylrclibup/processor/core.py:299
 msgid "根据解析结果：将按纯音乐曲目上传。"
 msgstr "Based on parsing results: will upload as instrumental track."
 
-#: pylrclibup/processor/core.py:256
+#: pylrclibup/processor/core.py:300
 msgid "确认以纯音乐方式上传？[y/N]: "
 msgstr "Confirm upload as instrumental? [y/N]: "
 
-#: pylrclibup/processor/core.py:258 pylrclibup/processor/core.py:272
+#: pylrclibup/processor/core.py:302 pylrclibup/processor/core.py:316
 msgid "用户取消上传。"
 msgstr "User canceled upload."
 
-#: pylrclibup/processor/core.py:263
+#: pylrclibup/processor/core.py:307
 msgid "纯音乐上传完成 ✓"
 msgstr "Instrumental upload completed ✓"
 
-#: pylrclibup/processor/core.py:266
+#: pylrclibup/processor/core.py:310
 msgid "纯音乐上传失败 ×"
 msgstr "Instrumental upload failed ×"
 
-#: pylrclibup/processor/core.py:270
+#: pylrclibup/processor/core.py:314
 msgid "确认上传本地歌词？[y/N]: "
 msgstr "Confirm upload local lyrics? [y/N]: "
 
-#: pylrclibup/processor/core.py:277
+#: pylrclibup/processor/core.py:321
 msgid "上传完成 ✓"
 msgstr "Upload completed ✓"
 
-#: pylrclibup/processor/core.py:280
+#: pylrclibup/processor/core.py:324
 msgid "上传失败 ×"
 msgstr "Upload failed ×"
 
-#: pylrclibup/processor/core.py:301
-#, python-brace-format
-msgid "处理：{meta}"
-msgstr "Processing: {meta}"
+#: pylrclibup/processor/core.py:346
+msgid "音频"
+msgstr ""
 
-#: pylrclibup/processor/core.py:307
+#: pylrclibup/processor/core.py:348
+#, python-brace-format
+msgid "处理（{source_type}）：{meta}"
+msgstr ""
+
+#: pylrclibup/processor/core.py:370
 #, python-brace-format
 msgid "⚠ 未找到本地 LRC 文件：{track}"
 msgstr "⚠ Local LRC file not found: {track}"
 
-#: pylrclibup/processor/core.py:314
+#: pylrclibup/processor/core.py:377
 #, python-brace-format
 msgid "正在标准化 LRC 文件：{filename}"
 msgstr "Normalizing LRC file: {filename}"
 
-#: pylrclibup/processor/core.py:316
+#: pylrclibup/processor/core.py:379
 msgid "✓ LRC 文件已标准化"
 msgstr "✓ LRC file normalized"
 
-#: pylrclibup/processor/core.py:318
+#: pylrclibup/processor/core.py:381
 msgid "⚠ LRC 文件标准化失败，将继续使用原始内容"
 msgstr "⚠ LRC file normalization failed, will continue with original content"
 
-#: pylrclibup/processor/core.py:337
-msgid "LRC 中检测到\"纯音乐，请欣赏\"等字样，将按纯音乐处理（不上传歌词内容）。"
+#: pylrclibup/processor/core.py:387
+#, fuzzy
+msgid "LRC 中检测到“纯音乐，请欣赏”等字样，将按纯音乐处理（不上传歌词内容）。"
 msgstr ""
 "Detected instrumental markers (e.g., '纯音乐，请欣赏') in LRC. Will be treated "
 "as instrumental (no lyrics content uploaded)."
 
-#: pylrclibup/processor/core.py:339
+#: pylrclibup/processor/core.py:389
 msgid "本地 plainLyrics（将上传）"
 msgstr "Local plainLyrics (will be uploaded)"
 
-#: pylrclibup/processor/core.py:340
+#: pylrclibup/processor/core.py:390
 msgid "本地 syncedLyrics（将上传）"
 msgstr "Local syncedLyrics (will be uploaded)"
 
-#: pylrclibup/processor/core.py:361
+#: pylrclibup/processor/core.py:415
 #, python-brace-format
 msgid "扫描音频文件：{extensions}"
 msgstr "Scanning audio files: {extensions}"
 
-#: pylrclibup/processor/core.py:373
-#, python-brace-format
-msgid "未找到任何支持的音频文件（{extensions}）"
+#: pylrclibup/processor/core.py:426
+#, fuzzy, python-brace-format
+msgid "扫描 YAML 元数据文件：{extensions}"
+msgstr "Scanning audio files: {extensions}"
+
+#: pylrclibup/processor/core.py:439
+#, fuzzy, python-brace-format
+msgid "未找到任何支持的文件（{extensions}）"
 msgstr "No supported audio files found ({extensions})"
 
-#: pylrclibup/processor/core.py:376
+#: pylrclibup/processor/core.py:445
 #, python-brace-format
-msgid "共找到 {total} 个音频文件"
-msgstr "Found {total} audio files in total"
+msgid "共找到 {total} 个文件（音频：{audio}，YAML：{yaml}）"
+msgstr ""
 
-#: pylrclibup/processor/core.py:379
+#: pylrclibup/processor/core.py:450
 #, python-brace-format
 msgid "[{idx}/{total}] 开始处理..."
 msgstr "[{idx}/{total}] Start processing..."
 
-#: pylrclibup/processor/core.py:383
+#: pylrclibup/processor/core.py:454
 msgid "全部完成。"
 msgstr "All completed."
 
@@ -404,35 +415,60 @@ msgstr "Failed to write LRC file {path}: {error}"
 msgid "标准化 LRC 文件失败 {path}: {error}"
 msgstr "Failed to normalize LRC file {path}: {error}"
 
-#: pylrclibup/model/track.py:105
+#: pylrclibup/model/track.py:104
 #, python-brace-format
 msgid "读取标签 {key} 失败: {error}"
 msgstr "Failed to read tag {key}: {error}"
 
-#: pylrclibup/model/track.py:122
+#: pylrclibup/model/track.py:121
 #, python-brace-format
 msgid "无法读取音频文件：{filename}"
 msgstr "Unable to read audio file: {filename}"
 
-#: pylrclibup/model/track.py:125
+#: pylrclibup/model/track.py:124
 #, python-brace-format
 msgid "音频文件无标签：{filename}"
 msgstr "Audio file has no tags: {filename}"
 
-#: pylrclibup/model/track.py:128
+#: pylrclibup/model/track.py:127
 #, python-brace-format
 msgid "读取音频文件异常 {filename}: {error}"
 msgstr "Exception reading audio file {filename}: {error}"
 
-#: pylrclibup/model/track.py:137
+#: pylrclibup/model/track.py:136
 #, python-brace-format
 msgid "音频文件标签不完整：{filename}"
 msgstr "Audio file tags incomplete: {filename}"
 
-#: pylrclibup/model/track.py:146
+#: pylrclibup/model/track.py:145
 #, python-brace-format
 msgid "音频文件时长无效：{filename}"
 msgstr "Audio file duration invalid: {filename}"
+
+#: pylrclibup/model/yaml_meta.py:50
+#, python-brace-format
+msgid "YAML 文件格式错误（非字典）：{path}"
+msgstr ""
+
+#: pylrclibup/model/yaml_meta.py:59
+#, python-brace-format
+msgid "YAML 文件缺少必需字段（track/artist/album/duration）：{path}"
+msgstr ""
+
+#: pylrclibup/model/yaml_meta.py:67
+#, python-brace-format
+msgid "YAML 文件 duration 字段无效：{path}"
+msgstr ""
+
+#: pylrclibup/model/yaml_meta.py:82
+#, fuzzy, python-brace-format
+msgid "解析 YAML 文件失败 {path}: {error}"
+msgstr "Failed to read LRC file {path}: {error}"
+
+#: pylrclibup/model/yaml_meta.py:85
+#, fuzzy, python-brace-format
+msgid "读取 YAML 文件异常 {path}: {error}"
+msgstr "Failed to read LRC file {path}: {error}"
 
 #: pylrclibup/api/pow.py:22
 #, python-brace-format
@@ -565,4 +601,10 @@ msgstr "No permission to delete directory: {dir}"
 #, python-brace-format
 msgid "删除目录失败 {dir}: {error}"
 msgstr "Failed to delete directory {dir}: {error}"
+
+#~ msgid "处理：{meta}"
+#~ msgstr "Processing: {meta}"
+
+#~ msgid "共找到 {total} 个音频文件"
+#~ msgstr "Found {total} audio files in total"
 

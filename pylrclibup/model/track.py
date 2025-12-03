@@ -12,7 +12,6 @@ from mutagen.id3 import ID3NoHeaderError
 from ..logging_utils import log_warn, log_error, log_debug
 from ..i18n import get_text as _
 
-
 # 各格式标签键映射（统一到 title, artist, album）
 TAG_MAPPINGS: Dict[str, Dict[str, list[str]]] = {
     # MP3 (ID3v2)
@@ -162,3 +161,15 @@ class TrackMeta:
         ⚠️ 已弃用，请使用 from_audio_file()
         """
         return cls.from_audio_file(mp3_path)
+
+    @classmethod
+    def from_yaml(cls, yaml_meta: "YamlTrackMeta") -> "TrackMeta":
+        from .yaml_meta import YamlTrackMeta  # 避免循环导入
+        """从 YamlTrackMeta 转换为 TrackMeta"""
+        return cls(
+            path=yaml_meta.path,
+            track=yaml_meta.track,
+            artist=yaml_meta.artist,
+            album=yaml_meta.album,
+            duration=yaml_meta.duration,
+        )

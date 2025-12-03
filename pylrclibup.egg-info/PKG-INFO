@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: pylrclibup
-Version: 0.3.0
+Version: 0.4.0
 Summary: A robust Python CLI tool for uploading lyrics or instrumental tags to LRCLIB.
 Author-email: Harmonese <soundwaveradiator@gmail.com>
 License-Expression: MIT
@@ -14,324 +14,736 @@ License-File: LICENSE
 Requires-Dist: requests>=2.31.0
 Requires-Dist: mutagen>=1.47
 Requires-Dist: babel>=2.12.0
+Requires-Dist: pyyaml>=6.0
 Dynamic: license-file
+
+# English
 
 # pylrclibup
 
-一个用于将本地 MP3/LRC 歌曲批量上传到 **LRCLIB.net** 的全自动增强工具。
-比官方工具更强、更稳定、更智能——覆盖元数据解析、模糊匹配、本地/外部歌词整合、脚本自动化、网络重试、空目录清理与纯音乐识别等整套流程。
+[![PyPI version](https://badge.fury.io/py/pylrclibup.svg)](https://badge.fury.io/py/pylrclibup)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**A powerful CLI tool to upload local lyrics to LRCLIB.net**
+
+[English](#english) | [中文](#中文)
 
 ---
 
-# ✨ 功能亮点
+## ✨ Features
 
-## 🎵 1. 自动从 MP3 读取真实 metadata
-
-- 支持 ID3v2.3 / 2.4
-- 自动读取：
-  - `title`（曲名）
-  - `artist`（艺人，多艺人自动拆分）
-  - `album`（专辑名）
-  - `duration`（时长）
-- 完全不依赖文件名，提高准确性
-
-## 🔍 2. 智能匹配本地 LRC（递归扫描 + 宽松模糊规则）
-
-- 提取 LRC 文件名的结构：`Artist - Title.lrc`
-- 多艺人匹配仅需 **一个艺人命中** 即可
-- 曲名 normalize 后严格一致（避免误匹配）
-- 自动处理以下分隔符：`,` `/` `;` `、` `&` `x` `×` `feat.` `featuring`
-- 若匹配到多个 LRC → 自动进入交互选择模式
-- 支持手动指定歌词文件路径
-
-## 🧹 3. 高级 LRC 标准化处理
-
-### 自动清理：
-- **删除歌词头部**：第一个时间戳之前的所有内容
-- **删除中文翻译行**：连续相同时间戳的中文行
-- **Credit 字段移除**：作词/作曲/编曲/录音/混音/母带/制作/监制/和声/配唱等
-- 支持 credit 的各种格式变体（全角/半角冒号等）
-
-### 多语言支持：
-- Unicode 规范化（NFKC）
-- 西里尔字母统一（俄语/乌克兰语等）
-- 全角标点转换
-- 零宽字符清理
-
-## 🎼 4. 自动识别纯音乐
-
-- 检测文本："纯音乐，请欣赏" 等常见表达
-- 或 LRC 内容为空
-- 或用户手动选择
-- 自动上传为空歌词（instrumental）
-
-## 🌐 5. 双查询机制（内部 + 外部）
-
-- **`/api/get-cached`** → 仅查询 LRCLIB 内部数据库（0 外部请求）
-- **`/api/get`** → 触发外部源抓取（Genius/Musixmatch 等）
-- 智能判断：
-  - 歌词是否已存在
-  - 外部版本是否优于本地版本
-  - 支持用户选择使用哪个版本
-
-## 🚀 6. 完整的上传流程（自实现 PoW）
-
-- **自定义 PoW 求解器**（完全无外部依赖）
-- 自动获取 challenge → 计算 nonce → 生成 publish token
-- SHA-256 哈希验证
-- 最大化降低网络失败影响
-
-## 🔁 7. 智能重试机制
-
-对网络不稳定环境特别优化：
-- 所有 API 调用自动重试（最大 5 次）
-- 5xx 错误自动重试，4xx 错误立即停止
-- 404 特殊处理（视为无结果）
-- 可通过环境变量自定义重试次数
-
-## 🖱 9. CLI 友好交互
-
-- 单首文件上传
-- 所有操作可交互式确认
-- `--yes` 模式全自动
-- `--dry-run` 不上传，不移动，全面预览
-- `-p/--parse` LRC 标准化模式
+- 🎵 **Multi-format audio support**: MP3, M4A, AAC, FLAC, WAV
+- 🔍 **Intelligent LRC matching**: Fuzzy artist search, normalized title comparison
+- 🧹 **Advanced LRC standardization**: Unicode normalization, duplicate removal, credit line stripping
+- 🎼 **Instrumental track detection**: Auto-detect and upload empty lyrics
+- 🔁 **Smart retry mechanism**: Exponential backoff with network resilience
+- 🌍 **Bilingual interface**: Auto-detect locale or manual override (EN/CN)
+- 📁 **Flexible file management**: Independent flags for complete control
+- 🚀 **Robust upload**: Custom PoW solver with auto challenge handling
 
 ---
 
-# 📥 安装
+## 📥 Installation
 
-## PyPI 版本
+### From PyPI (Recommended)
 
 ```bash
 pip install pylrclibup
 ```
 
-## 本地开发模式
+### From Source
 
 ```bash
-git clone https://github.com/yourusername/pylrclibup.git
+git clone https://github.com/Harmonese/pylrclibup.git
 cd pylrclibup
 pip install -e .
 ```
 
 ---
 
-# 🧭 使用示例
+## 🚀 Quick Start
 
-## 1. 快速开始（原地模式）
+### Basic Usage
+
+Process audio files in current directory:
 
 ```bash
 cd /path/to/music
 pylrclibup
 ```
 
-- 递归扫描当前目录下所有 MP3
-- 查找匹配的 LRC 文件
-- 上传成功后文件保持原地
-- 适用于只上传不整理的场景
+### Quick Mode
 
----
-
-## 2. -d / --default 默认模式（LRC 跟随 MP3）
+Move LRC files from downloads to music library:
 
 ```bash
-pylrclibup -d "/path/to/tracks" "/path/to/lyrics"
+pylrclibup -d "/music/tracks" "/downloads/lyrics"
 ```
 
-**行为**：
-- 按交互模式进行匹配与上传
-- MP3 文件保持原地不动
-- LRC 文件移动到 MP3 所在目录并重命名匹配
-- 不清理空目录
+This will:
 
-**使用场景**：
-- 从下载目录整理歌词到音乐库
-- 保持 MP3 文件结构不变
+- Keep audio files in `/music/tracks`
+- Move LRC files to audio directories
+- Rename LRC to match audio filenames
+- Standardize LRC content
 
 ---
 
-## 3. -m / --match 匹配模式（歌词跟随歌曲）
+## 📖 Usage Examples
 
-### 3.1 无参数 + -m（歌词跟随，歌曲不动）
+### 1. Upload Only (In-Place)
 
 ```bash
-cd /music
+pylrclibup
+```
+
+Files stay in their original locations.
+
+---
+
+### 2. Match Mode
+
+```bash
 pylrclibup -m
 ```
 
-**行为**：
-- MP3 保持原地
-- LRC 移动到 MP3 目录并重命名匹配
-
-### 3.2 指定输出 + -m（统一输出）
-
-```bash
-pylrclibup --tracks "/path/to/track/input" --lrc "/path/to/lrc/input" --done-tracks "/output" -m
-```
-
-**行为**：
-- MP3 和 LRC 都移动到 `/output`
-- LRC 重命名为与 MP3 相同的文件名
+LRC follows audio + renames + cleanses (equivalent to `-f -r -c`).
 
 ---
 
-## 4. 普通模式（分别输出）
+### 3. Custom Workflow
 
 ```bash
 pylrclibup \
   --tracks "/music/input" \
   --lrc "/lyrics/input" \
   --done-tracks "/music/output" \
-  --done-lrc "/lyrics/output"
+  --done-lrc "/lyrics/output" \
+  --rename --cleanse
 ```
 
-**行为**：
-- MP3 → `/music/output`
-- LRC → `/lyrics/output`
-- 自动清理空目录
+Separate input/output directories with selective options.
 
 ---
 
-## 5. 单首处理（即将遗弃）
+### 4. Cleanse Only
 
 ```bash
-pylrclibup --single "Lost & Found.mp3"
+pylrclibup --lrc "/path/to/lyrics" --cleanse
 ```
+
+Standardize LRC files without uploading.
 
 ---
 
-## 6. 预览模式（不上传不移动）
+### 5. Preview Control
 
 ```bash
-pylrclibup --dry-run
+pylrclibup --preview-lines 20
 ```
+
+Show 20 lines during lyric confirmation.
 
 ---
 
-## 7. 全自动模式（即将遗弃）
+### 6. Language Selection
 
 ```bash
-pylrclibup --yes
-```
+# Force English
+pylrclibup --lang en_US
 
----
+# Force Chinese
+pylrclibup --lang zh_CN
 
-## 8. LRC 标准化工具
-
-```bash
-# 单个文件
-pylrclibup -p "song.lrc"
-
-# 批量处理
-pylrclibup -p "/path/to/lyrics/"
+# Auto-detect (default)
+pylrclibup --lang auto
 ```
 
 ---
 
-# ⚙️ 环境变量支持
+## 🎯 Common Scenarios
 
-所有 CLI 参数都可通过环境变量控制：
+| Scenario         | Command                                       | Audio Behavior | LRC Behavior            |
+| ---------------- | --------------------------------------------- | -------------- | ----------------------- |
+| Upload only      | `pylrclibup`                                | In-place       | In-place                |
+| Organize lyrics  | `pylrclibup -d /music /downloads`           | In-place       | Move + rename + cleanse |
+| Match mode       | `pylrclibup -m`                             | In-place       | Move + rename + cleanse |
+| Separate outputs | `pylrclibup --done-tracks /a --done-lrc /b` | Move to /a     | Move to /b              |
+| Cleanse LRC      | `pylrclibup --lrc /lyrics -c`               | N/A            | Standardize in-place    |
+
+---
+
+## ⚙️ Options Reference
+
+### Path Options
 
 ```bash
-export PYLRCLIBUP_TRACKS_DIR="/data/mp3"
-export PYLRCLIBUP_LRC_DIR="/data/lrc"
-export PYLRCLIBUP_DONE_TRACKS_DIR="/data/handled_mp3"
-export PYLRCLIBUP_DONE_LRC_DIR="/data/handled_lrc"
-export PYLRCLIBUP_PREVIEW_LINES=8
-export PYLRCLIBUP_MAX_HTTP_RETRIES=5
-export PYLRCLIBUP_USER_AGENT="MyApp/1.0"
+--tracks PATH          # Audio input directory (default: current dir)
+--lrc PATH             # LRC input directory (default: current dir)
+--done-tracks PATH     # Move processed audio to this directory
+--done-lrc PATH        # Move processed LRC to this directory
+```
+
+### Behavior Options
+
+```bash
+-f, --follow           # LRC follows audio to same directory
+-r, --rename           # Rename LRC to match audio filename
+-c, --cleanse          # Standardize LRC before processing
+```
+
+### Preset Modes
+
+```bash
+-d, --default TRACKS LRC    # Quick mode: --tracks TRACKS --lrc LRC -f -r -c
+-m, --match                 # Match mode: -f -r -c (current dir)
+```
+
+### Other Options
+
+```bash
+--preview-lines N      # Lyric preview lines (default: 10)
+--lang LANG            # Interface language: zh_CN | en_US | auto
+--max-retries N        # HTTP retry count (default: 5)
+-h, --help             # Show help message
+--version              # Show version number
+```
+
+---
+
+## 🌍 Environment Variables
+
+Override defaults without CLI arguments:
+
+```bash
+export PYLRCLIBUP_TRACKS_DIR="/data/music"
+export PYLRCLIBUP_LRC_DIR="/data/lyrics"
+export PYLRCLIBUP_DONE_TRACKS_DIR="/data/processed/music"
+export PYLRCLIBUP_DONE_LRC_DIR="/data/processed/lyrics"
+export PYLRCLIBUP_PREVIEW_LINES=15
+export PYLRCLIBUP_MAX_HTTP_RETRIES=10
+export PYLRCLIBUP_USER_AGENT="MyMusicApp/2.0"
+export PYLRCLIBUP_LANG=en_US
 
 pylrclibup
 ```
 
-**优先级**：CLI 参数 > 环境变量 > 默认值
+**Priority**: CLI args > Environment variables > Defaults
 
 ---
 
-# 📋 完整 CLI 参数
+## 🧹 LRC Standardization
 
-```
-pylrclibup [OPTIONS]
+When using `-c/--cleanse`, the following operations are performed:
 
-选项：
-  --tracks PATH           歌曲文件输入目录（默认：当前目录）
-  --lrc PATH              LRC 文件输入目录（默认：当前目录）
-  --done-tracks PATH      处理后歌曲移动目录（默认：与 --tracks 相同）
-  --done-lrc PATH         处理后 LRC 移动目录（默认：与 --lrc 相同）
-
-  -d, --default TRACKS LRC
-                          默认模式：MP3 不动，LRC 跟随 MP3
-
-  -m, --match             匹配模式：LRC 跟随歌曲（重命名为相同文件名）
-
-  -p, --parse PATH        LRC 标准化模式（单个文件或目录）
-
-  --single FILE           只处理指定文件
-  --yes                   全自动模式，不询问确认
-  --dry-run               预览模式，不上传不移动
-
-  --preview-lines N       预览歌词显示行数（默认：10）
-```
+- ✅ Remove header content before first timestamp
+- ✅ Strip credit lines (作词, 作曲, 编曲, 混音, etc.)
+- ✅ Delete duplicate translations (same timestamp, CJK detection)
+- ✅ Unicode normalization (NFKC)
+- ✅ Fullwidth punctuation conversion
+- ✅ Cyrillic character mapping (ё→е, і→и, etc.)
+- ✅ Instrumental phrase detection
 
 ---
 
-# 🔧 高级用法
+## 🛠️ Advanced Usage
 
-## 处理递归子目录
+### Batch Processing
 
 ```bash
-# 目录结构：
-# /music/
-#   artist1/
-#     album1/
-#       01.mp3
-#   artist2/
-#     02.mp3
+#!/bin/bash
+for dir in /music/*/; do
+    echo "Processing: $dir"
+    pylrclibup --tracks "$dir" --lrc "/downloads/lyrics" -f -r -c
+done
+```
 
-cd /music
+### Manual LRC Path Input
+
+When auto-matching fails, choose `[m]` and input path:
+
+```
+Enter LRC file path: /path/to/lyrics/song.lrc
+```
+
+Supports:
+
+- Absolute paths: `/home/user/lyrics/song.lrc`
+- Relative paths: `../lyrics/song.lrc`
+- Home expansion: `~/Music/lyrics/song.lrc`
+
+### Instrumental Tracks
+
+For tracks without lyrics, choose `[i]`:
+
+```
+Will upload empty lyrics (marked as instrumental).
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Issue: "No supported audio files found"
+
+**Solution**: Check directory and file formats (MP3/M4A/FLAC/WAV)
+
+```bash
+ls -la /path/to/music
+pylrclibup --tracks /correct/path
+```
+
+---
+
+### Issue: "LRC file not found"
+
+**Solution**: Check LRC naming format: `Artist - Title.lrc`
+
+```bash
+# Use manual specification
+pylrclibup  # then choose [m] and input path
+```
+
+---
+
+### Issue: "HTTP request failed"
+
+**Solution**: Increase retry count
+
+```bash
+pylrclibup --max-retries 10
+# or
+export PYLRCLIBUP_MAX_HTTP_RETRIES=10
 pylrclibup
 ```
 
-**原地模式**：所有 MP3 保持在各自目录
-**-m 模式**：LRC 移动到各 MP3 所在目录
-
 ---
 
-## 手动指定歌词文件
+### Issue: Translation not working
 
-当自动匹配失败时：
+**Solution**: Compile translation files
 
-```
-未找到本地 LRC，选择 [s] 跳过该歌曲 / [m] 手动指定歌词文件 / [i] 上传空歌词标记为纯音乐 / [q] 退出程序:
+```bash
+cd pylrclibup
+./scripts/compile_translations.sh
 ```
 
-选择 `m` 后，可输入绝对/相对路径：
-- 支持引号（单引号/双引号）
-- 支持 `~` 展开
-- 支持相对路径（基于当前工作目录）
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make changes and test: `pytest tests/`
+4. Commit: `git commit -m "Add amazing feature"`
+5. Push: `git push origin feature/amazing-feature`
+6. Open Pull Request
+
+### Development Setup
+
+```bash
+git clone https://github.com/Harmonese/pylrclibup.git
+cd pylrclibup
+pip install -e ".[dev]"
+pytest
+```
 
 ---
 
-# 🎯 使用场景对照
+## 📄 License
 
-| 场景 | 命令 | MP3 行为 | LRC 行为 |
-|------|------|----------|----------|
-| 只上传不整理 | `pylrclibup` | 原地 | 原地 |
-| 整理歌词到音乐库 | `pylrclibup -d /music /downloads` | 原地 | 移动并重命名 |
-| 歌词跟随歌曲（原地） | `pylrclibup -m` | 原地 | 移动并重命名 |
-| 统一输出目录 | `pylrclibup --done-tracks /out -m` | 移动 | 移动并重命名 |
-| 分别整理 | `pylrclibup --done-tracks /a --done-lrc /b` | 移动到 /a | 移动到 /b |
-| 标准化 LRC | `pylrclibup -p /lyrics` | N/A | 原地清理 |
+MIT License - see [LICENSE](LICENSE) file for details
 
 ---
 
-# 📄 License
+## 🙏 Acknowledgments
 
-MIT License
+- [LRCLIB.net](https://lrclib.net) - Free lyrics API service
+- [Mutagen](https://mutagen.readthedocs.io/) - Audio metadata library
 
 ---
 
-# 🤝 贡献
+## 📞 Support
 
-欢迎提交 Issue 和 Pull Request！
+- **Issues**: [GitHub Issues](https://github.com/Harmonese/pylrclibup/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Harmonese/pylrclibup/discussions)
+
+---
+
+<div align="center">
+
+**Made with ❤️ by [Harmonese](https://github.com/Harmonese)**
+
+⭐ Star this repo if you find it helpful!
+
+[![GitHub stars](https://img.shields.io/github/stars/Harmonese/pylrclibup.svg?style=social&label=Star)](https://github.com/Harmonese/pylrclibup)
+
+</div>
+```
+
+---
+
+# 中文
+
+# pylrclibup
+
+[![PyPI version](https://badge.fury.io/py/pylrclibup.svg)](https://badge.fury.io/py/pylrclibup)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**强大的本地歌词上传工具,支持自动匹配、标准化和智能管理**
+
+[English](README.md) | [中文](README_CN.md)
+
+---
+
+## ✨ 功能特性
+
+- 🎵 **多格式音频支持**: MP3, M4A, AAC, FLAC, WAV
+- 🔍 **智能 LRC 匹配**: 模糊艺人搜索、标准化曲名比较
+- 🧹 **高级 LRC 标准化**: Unicode 规范化、去重、移除制作信息
+- 🎼 **纯音乐识别**: 自动检测并上传空歌词
+- 🔁 **智能重试机制**: 指数退避与网络容错
+- 🌍 **双语界面**: 自动检测语言环境或手动覆盖 (中/英)
+- 📁 **灵活的文件管理**: 独立标志实现完全控制
+- 🚀 **健壮的上传**: 自定义 PoW 求解器与自动 challenge 处理
+
+---
+
+## 📥 安装
+
+### 从 PyPI 安装（推荐）
+
+```bash
+pip install pylrclibup
+```
+
+### 从源码安装
+
+```bash
+git clone https://github.com/Harmonese/pylrclibup.git
+cd pylrclibup
+pip install -e .
+```
+
+---
+
+## 🚀 快速开始
+
+### 基本用法
+
+处理当前目录的音频文件:
+
+```bash
+cd /path/to/music
+pylrclibup
+```
+
+### 快速模式
+
+从下载目录整理 LRC 到音乐库:
+
+```bash
+pylrclibup -d "/music/tracks" "/downloads/lyrics"
+```
+
+效果:
+
+- 音频文件保持在 `/music/tracks`
+- LRC 文件移动到音频目录
+- LRC 重命名匹配音频文件名
+- 标准化 LRC 内容
+
+---
+
+## 📖 使用示例
+
+### 1. 仅上传（原地模式）
+
+```bash
+pylrclibup
+```
+
+文件保持在原始位置。
+
+---
+
+### 2. 匹配模式
+
+```bash
+pylrclibup -m
+```
+
+LRC 跟随音频 + 重命名 + 标准化（等同于 `-f -r -c`）。
+
+---
+
+### 3. 自定义工作流
+
+```bash
+pylrclibup \
+  --tracks "/music/input" \
+  --lrc "/lyrics/input" \
+  --done-tracks "/music/output" \
+  --done-lrc "/lyrics/output" \
+  --rename --cleanse
+```
+
+分别指定输入/输出目录，选择性选项。
+
+---
+
+### 4. 仅标准化
+
+```bash
+pylrclibup --lrc "/path/to/lyrics" --cleanse
+```
+
+标准化 LRC 文件但不上传。
+
+---
+
+### 5. 预览控制
+
+```bash
+pylrclibup --preview-lines 20
+```
+
+歌词确认时显示 20 行。
+
+---
+
+### 6. 语言选择
+
+```bash
+# 强制英文
+pylrclibup --lang en_US
+
+# 强制中文
+pylrclibup --lang zh_CN
+
+# 自动检测（默认）
+pylrclibup --lang auto
+```
+
+---
+
+## 🎯 常见场景
+
+| 场景     | 命令                                          | 音频行为  | LRC 行为               |
+| -------- | --------------------------------------------- | --------- | ---------------------- |
+| 仅上传   | `pylrclibup`                                | 原地      | 原地                   |
+| 整理歌词 | `pylrclibup -d /music /downloads`           | 原地      | 移动 + 重命名 + 标准化 |
+| 匹配模式 | `pylrclibup -m`                             | 原地      | 移动 + 重命名 + 标准化 |
+| 分别输出 | `pylrclibup --done-tracks /a --done-lrc /b` | 移动到 /a | 移动到 /b              |
+| 清理 LRC | `pylrclibup --lrc /lyrics -c`               | N/A       | 原地标准化             |
+
+---
+
+## ⚙️ 选项参考
+
+### 路径选项
+
+```bash
+--tracks PATH          # 音频输入目录（默认：当前目录）
+--lrc PATH             # LRC 输入目录（默认：当前目录）
+--done-tracks PATH     # 处理后音频移动目录
+--done-lrc PATH        # 处理后 LRC 移动目录
+```
+
+### 行为选项
+
+```bash
+-f, --follow           # LRC 跟随音频到同一目录
+-r, --rename           # LRC 重命名匹配音频文件名
+-c, --cleanse          # 处理前标准化 LRC
+```
+
+### 预设模式
+
+```bash
+-d, --default TRACKS LRC    # 快速模式: --tracks TRACKS --lrc LRC -f -r -c
+-m, --match                 # 匹配模式: -f -r -c（当前目录）
+```
+
+### 其他选项
+
+```bash
+--preview-lines N      # 歌词预览行数（默认：10）
+--lang LANG            # 界面语言: zh_CN | en_US | auto
+--max-retries N        # HTTP 重试次数（默认：5）
+-h, --help             # 显示帮助信息
+--version              # 显示版本号
+```
+
+---
+
+## 🌍 环境变量
+
+无需 CLI 参数即可覆盖默认值:
+
+```bash
+export PYLRCLIBUP_TRACKS_DIR="/data/music"
+export PYLRCLIBUP_LRC_DIR="/data/lyrics"
+export PYLRCLIBUP_DONE_TRACKS_DIR="/data/processed/music"
+export PYLRCLIBUP_DONE_LRC_DIR="/data/processed/lyrics"
+export PYLRCLIBUP_PREVIEW_LINES=15
+export PYLRCLIBUP_MAX_HTTP_RETRIES=10
+export PYLRCLIBUP_USER_AGENT="MyMusicApp/2.0"
+export PYLRCLIBUP_LANG=zh_CN
+
+pylrclibup
+```
+
+**优先级**: CLI 参数 > 环境变量 > 默认值
+
+---
+
+## 🧹 LRC 标准化
+
+使用 `-c/--cleanse` 时执行以下操作:
+
+- ✅ 删除第一个时间戳之前的头部内容
+- ✅ 移除制作信息行（作词、作曲、编曲、混音等）
+- ✅ 删除重复翻译行（相同时间戳、CJK 检测）
+- ✅ Unicode 规范化 (NFKC)
+- ✅ 全角标点转换
+- ✅ 西里尔字母映射（ё→е, і→и 等）
+- ✅ 纯音乐短语检测
+
+---
+
+## 🛠️ 高级用法
+
+### 批量处理
+
+```bash
+#!/bin/bash
+for dir in /music/*/; do
+    echo "正在处理: $dir"
+    pylrclibup --tracks "$dir" --lrc "/downloads/lyrics" -f -r -c
+done
+```
+
+### 手动输入 LRC 路径
+
+当自动匹配失败时，选择 `[m]` 并输入路径:
+
+```
+请输入 LRC 文件的完整路径: /path/to/lyrics/song.lrc
+```
+
+支持:
+
+- 绝对路径: `/home/user/lyrics/song.lrc`
+- 相对路径: `../lyrics/song.lrc`
+- Home 展开: `~/Music/lyrics/song.lrc`
+
+### 纯音乐曲目
+
+对于无歌词的曲目，选择 `[i]`:
+
+```
+将上传空歌词（标记为纯音乐）。
+```
+
+---
+
+## 🐛 故障排查
+
+### 问题: "未找到任何支持的音频文件"
+
+**解决方案**: 检查目录和文件格式（MP3/M4A/FLAC/WAV）
+
+```bash
+ls -la /path/to/music
+pylrclibup --tracks /correct/path
+```
+
+---
+
+### 问题: "未找到 LRC 文件"
+
+**解决方案**: 检查 LRC 命名格式: `艺人 - 标题.lrc`
+
+```bash
+# 使用手动指定
+pylrclibup  # 然后选择 [m] 并输入路径
+```
+
+---
+
+### 问题: "HTTP 请求失败"
+
+**解决方案**: 增加重试次数
+
+```bash
+pylrclibup --max-retries 10
+# 或
+export PYLRCLIBUP_MAX_HTTP_RETRIES=10
+pylrclibup
+```
+
+---
+
+### 问题: 翻译不工作
+
+**解决方案**: 编译翻译文件
+
+```bash
+cd pylrclibup
+./scripts/compile_translations.sh
+```
+
+---
+
+## 🤝 贡献
+
+1. Fork 仓库
+2. 创建功能分支: `git checkout -b feature/amazing-feature`
+3. 修改并测试: `pytest tests/`
+4. 提交: `git commit -m "添加某某功能"`
+5. 推送: `git push origin feature/amazing-feature`
+6. 创建 Pull Request
+
+### 开发环境设置
+
+```bash
+git clone https://github.com/Harmonese/pylrclibup.git
+cd pylrclibup
+pip install -e ".[dev]"
+pytest
+```
+
+---
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+## 🙏 致谢
+
+- [LRCLIB.net](https://lrclib.net) - 免费歌词 API 服务
+- [Mutagen](https://mutagen.readthedocs.io/) - 音频元数据库
+
+---
+
+## 📞 支持
+
+- **问题反馈**: [GitHub Issues](https://github.com/Harmonese/pylrclibup/issues)
+- **讨论**: [GitHub Discussions](https://github.com/Harmonese/pylrclibup/discussions)
+
+---
+
+<div align="center">
+
+**用 ❤️ 制作 by [Harmonese](https://github.com/Harmonese)**
+
+⭐ 如果觉得有用请给个 Star!
+
+[![GitHub stars](https://img.shields.io/github/stars/Harmonese/pylrclibup.svg?style=social&label=Star)](https://github.com/Harmonese/pylrclibup)
+
+</div>
