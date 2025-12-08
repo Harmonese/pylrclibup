@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pylrclibup"
-version = "0.5.0"
+version = "0.5.1"
 description = "A robust Python CLI tool for uploading lyrics or instrumental tags to LRCLIB."
 readme = "README.md"
 authors = [
@@ -22,10 +22,9 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["pylrclibup"]   # <<<<<<<<<<<<<<<<<<<<<<<< 最关键的一行
+include = ["pylrclibup"]
 exclude = ["test_env", "tests*", "examples*"]
 
-# 使 pip install 后自动获得命令行工具 pylrclibup
 [project.scripts]
 pylrclibup = "pylrclibup.cli.main:run_cli"
 

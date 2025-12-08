@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: pylrclibup
-Version: 0.4.0
+Version: 0.5.1
 Summary: A robust Python CLI tool for uploading lyrics or instrumental tags to LRCLIB.
 Author-email: Harmonese <soundwaveradiator@gmail.com>
 License-Expression: MIT
@@ -41,6 +41,7 @@ Dynamic: license-file
 - 🌍 **Bilingual interface**: Auto-detect locale or manual override (EN/CN)
 - 📁 **Flexible file management**: Independent flags for complete control
 - 🚀 **Robust upload**: Custom PoW solver with auto challenge handling
+- 📄 **YAML metadata support**: Describe tracks without audio files and still upload lyrics
 
 ---
 
@@ -162,15 +163,62 @@ pylrclibup --lang auto
 
 ---
 
+### 7. YAML Metadata Usage
+
+You can describe tracks using YAML files instead of real audio files. This is useful when:
+
+- You only have metadata and LRC files
+- You want to prepare uploads on a different machine from your music library
+
+A minimal YAML file:
+
+```yaml
+# song.yaml
+track: "Song Title"
+artist: "Artist Name"
+album: "Album Name"
+duration: 180        # duration in seconds
+lrc_file: "Song Title.lrc"  # optional, see below
+```
+
+Place `song.yaml` (and optionally the LRC) under `--tracks` directory:
+
+```bash
+pylrclibup --tracks "/path/with/yaml" --lrc "/path/to/lyrics"
+```
+
+The tool will:
+
+- Read metadata from `*.yaml` / `*.yml` files
+- Treat each YAML as a track (even without an audio file)
+- Use the YAML info to query LRCLIB and upload lyrics / instrumental markers
+- Apply the same interactive flow as for audio files
+
+#### How YAML finds the LRC file
+
+If `lrc_file` is set in YAML, lookup order is:
+
+1. Relative to the YAML file directory
+2. Under `--lrc` directory
+3. As an absolute path (if `lrc_file` is absolute)
+
+If `lrc_file` is **not** set, the tool will try:
+
+1. `song.yaml` → `song.lrc` in the same directory
+2. `song.lrc` under `--lrc` directory
+
+---
+
 ## 🎯 Common Scenarios
 
-| Scenario         | Command                                       | Audio Behavior | LRC Behavior            |
-| ---------------- | --------------------------------------------- | -------------- | ----------------------- |
-| Upload only      | `pylrclibup`                                | In-place       | In-place                |
-| Organize lyrics  | `pylrclibup -d /music /downloads`           | In-place       | Move + rename + cleanse |
-| Match mode       | `pylrclibup -m`                             | In-place       | Move + rename + cleanse |
-| Separate outputs | `pylrclibup --done-tracks /a --done-lrc /b` | Move to /a     | Move to /b              |
-| Cleanse LRC      | `pylrclibup --lrc /lyrics -c`               | N/A            | Standardize in-place    |
+| Scenario         | Command                                         | Audio Behavior | LRC Behavior            |
+| ---------------- | ----------------------------------------------- | -------------- | ----------------------- |
+| Upload only      | `pylrclibup`                                  | In-place       | In-place                |
+| Organize lyrics  | `pylrclibup -d /music /downloads`             | In-place       | Move + rename + cleanse |
+| Match mode       | `pylrclibup -m`                               | In-place       | Move + rename + cleanse |
+| Separate outputs | `pylrclibup --done-tracks /a --done-lrc /b`   | Move to /a     | Move to /b              |
+| Cleanse LRC      | `pylrclibup --lrc /lyrics -c`                 | N/A            | Standardize in-place    |
+| YAML only        | `pylrclibup --tracks /yaml_dir --lrc /lyrics` | N/A            | Same logic as audio     |
 
 ---
 
@@ -179,7 +227,7 @@ pylrclibup --lang auto
 ### Path Options
 
 ```bash
---tracks PATH          # Audio input directory (default: current dir)
+--tracks PATH          # Audio/YAML input directory (default: current dir)
 --lrc PATH             # LRC input directory (default: current dir)
 --done-tracks PATH     # Move processed audio to this directory
 --done-lrc PATH        # Move processed LRC to this directory
@@ -283,54 +331,6 @@ Will upload empty lyrics (marked as instrumental).
 
 ---
 
-## 🐛 Troubleshooting
-
-### Issue: "No supported audio files found"
-
-**Solution**: Check directory and file formats (MP3/M4A/FLAC/WAV)
-
-```bash
-ls -la /path/to/music
-pylrclibup --tracks /correct/path
-```
-
----
-
-### Issue: "LRC file not found"
-
-**Solution**: Check LRC naming format: `Artist - Title.lrc`
-
-```bash
-# Use manual specification
-pylrclibup  # then choose [m] and input path
-```
-
----
-
-### Issue: "HTTP request failed"
-
-**Solution**: Increase retry count
-
-```bash
-pylrclibup --max-retries 10
-# or
-export PYLRCLIBUP_MAX_HTTP_RETRIES=10
-pylrclibup
-```
-
----
-
-### Issue: Translation not working
-
-**Solution**: Compile translation files
-
-```bash
-cd pylrclibup
-./scripts/compile_translations.sh
-```
-
----
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -380,7 +380,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 [![GitHub stars](https://img.shields.io/github/stars/Harmonese/pylrclibup.svg?style=social&label=Star)](https://github.com/Harmonese/pylrclibup)
 
 </div>
-```
 
 ---
 
@@ -408,6 +407,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 - 🌍 **双语界面**: 自动检测语言环境或手动覆盖 (中/英)
 - 📁 **灵活的文件管理**: 独立标志实现完全控制
 - 🚀 **健壮的上传**: 自定义 PoW 求解器与自动 challenge 处理
+- 📄 **YAML 元数据支持**: 无音频文件也可通过 YAML 描述曲目并上传歌词
 
 ---
 
@@ -529,15 +529,62 @@ pylrclibup --lang auto
 
 ---
 
+### 7. YAML 元数据用法
+
+你可以使用 YAML 文件描述曲目，而不依赖真实音频文件。适用于：
+
+- 只有元数据和 LRC，音频不在当前机器
+- 想先在一台机器准备好上传任务
+
+一个最小 YAML 示例：
+
+```yaml
+# song.yaml
+track: "歌曲名"
+artist: "艺术家"
+album: "专辑名"
+duration: 180          # 时长（秒）
+lrc_file: "歌曲名.lrc"  # 可选，见下
+```
+
+将 `song.yaml`（以及可选的 LRC）放在 `--tracks` 指定的目录下：
+
+```bash
+pylrclibup --tracks "/path/with/yaml" --lrc "/path/to/lyrics"
+```
+
+程序会：
+
+- 扫描目录中的 `*.yaml` / `*.yml` 文件
+- 将每个 YAML 视为一首歌曲（即使没有音频文件）
+- 使用 YAML 中的元数据访问 LRCLIB 并上传歌词/纯音乐标记
+- 流程与普通音频文件一致，同样支持交互确认
+
+#### YAML 如何找到 LRC 文件
+
+当 YAML 中设置了 `lrc_file` 字段时，查找顺序为：
+
+1. 以 YAML 文件所在目录为基准的相对路径
+2. `--lrc` 指定目录下的同名文件
+3. 将 `lrc_file` 视为绝对路径（若本身为绝对路径）
+
+如果 **未设置** `lrc_file`，则会尝试：
+
+1. `song.yaml` → 同目录下的 `song.lrc`
+2. `--lrc` 目录下的 `song.lrc`
+
+---
+
 ## 🎯 常见场景
 
-| 场景     | 命令                                          | 音频行为  | LRC 行为               |
-| -------- | --------------------------------------------- | --------- | ---------------------- |
-| 仅上传   | `pylrclibup`                                | 原地      | 原地                   |
-| 整理歌词 | `pylrclibup -d /music /downloads`           | 原地      | 移动 + 重命名 + 标准化 |
-| 匹配模式 | `pylrclibup -m`                             | 原地      | 移动 + 重命名 + 标准化 |
-| 分别输出 | `pylrclibup --done-tracks /a --done-lrc /b` | 移动到 /a | 移动到 /b              |
-| 清理 LRC | `pylrclibup --lrc /lyrics -c`               | N/A       | 原地标准化             |
+| 场景           | 命令                                            | 音频行为  | LRC 行为               |
+| -------------- | ----------------------------------------------- | --------- | ---------------------- |
+| 仅上传         | `pylrclibup`                                  | 原地      | 原地                   |
+| 整理歌词       | `pylrclibup -d /music /downloads`             | 原地      | 移动 + 重命名 + 标准化 |
+| 匹配模式       | `pylrclibup -m`                               | 原地      | 移动 + 重命名 + 标准化 |
+| 分别输出       | `pylrclibup --done-tracks /a --done-lrc /b`   | 移动到 /a | 移动到 /b              |
+| 清理 LRC       | `pylrclibup --lrc /lyrics -c`                 | N/A       | 原地标准化             |
+| 仅 YAML 元数据 | `pylrclibup --tracks /yaml_dir --lrc /lyrics` | N/A       | 行为同音频模式         |
 
 ---
 
@@ -546,7 +593,7 @@ pylrclibup --lang auto
 ### 路径选项
 
 ```bash
---tracks PATH          # 音频输入目录（默认：当前目录）
+--tracks PATH          # 音频/YAML 输入目录（默认：当前目录）
 --lrc PATH             # LRC 输入目录（默认：当前目录）
 --done-tracks PATH     # 处理后音频移动目录
 --done-lrc PATH        # 处理后 LRC 移动目录
@@ -646,54 +693,6 @@ done
 
 ```
 将上传空歌词（标记为纯音乐）。
-```
-
----
-
-## 🐛 故障排查
-
-### 问题: "未找到任何支持的音频文件"
-
-**解决方案**: 检查目录和文件格式（MP3/M4A/FLAC/WAV）
-
-```bash
-ls -la /path/to/music
-pylrclibup --tracks /correct/path
-```
-
----
-
-### 问题: "未找到 LRC 文件"
-
-**解决方案**: 检查 LRC 命名格式: `艺人 - 标题.lrc`
-
-```bash
-# 使用手动指定
-pylrclibup  # 然后选择 [m] 并输入路径
-```
-
----
-
-### 问题: "HTTP 请求失败"
-
-**解决方案**: 增加重试次数
-
-```bash
-pylrclibup --max-retries 10
-# 或
-export PYLRCLIBUP_MAX_HTTP_RETRIES=10
-pylrclibup
-```
-
----
-
-### 问题: 翻译不工作
-
-**解决方案**: 编译翻译文件
-
-```bash
-cd pylrclibup
-./scripts/compile_translations.sh
 ```
 
 ---

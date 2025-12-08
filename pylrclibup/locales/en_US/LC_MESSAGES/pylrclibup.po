@@ -1,15 +1,15 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the pylrclibup package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+# pylrclibup English Translation.
+# Copyright (C) 2025 HARMONESE
+# This file is distributed under the same license as the pylrclibup package (MIT).
+# FIRST AUTHOR soundwaveradiator@gmail.com, 2025.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: pylrclibup 0.3.0\n"
+"Project-Id-Version: pylrclibup 0.5.1\n"
 "Report-Msgid-Bugs-To: https://github.com/Harmonese/pylrclibup/issues\n"
-"POT-Creation-Date: 2025-12-03 22:23+0800\n"
+"POT-Creation-Date: 2025-12-03 22:47+0800\n"
 "PO-Revision-Date: 2025-12-01 20:23+0800\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: FULL NAME soundwaveradiator@gmail.com\n"
 "Language: en_US\n"
 "Language-Team: en_US <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -137,7 +137,7 @@ msgstr "Skip this song, no upload, no move."
 
 #: pylrclibup/processor/core.py:233
 msgid "将上传空歌词（标记为纯音乐）。"
-msgstr "Will upload empty lyrics (marked as instrumental)."
+msgstr "Will upload with empty lyrics (marked as instrumental)."
 
 #: pylrclibup/processor/core.py:236
 msgid "纯音乐标记上传完成 ✓"
@@ -149,7 +149,7 @@ msgstr "Instrumental marker upload failed ×"
 
 #: pylrclibup/processor/core.py:243
 msgid "用户选择退出程序。"
-msgstr "User chose to exit program."
+msgstr "User chose to exit the program."
 
 #: pylrclibup/processor/core.py:247
 msgid "无效输入，请重新选择。"
@@ -211,12 +211,12 @@ msgstr "Upload failed ×"
 
 #: pylrclibup/processor/core.py:346
 msgid "音频"
-msgstr ""
+msgstr "Audio"
 
 #: pylrclibup/processor/core.py:348
 #, python-brace-format
 msgid "处理（{source_type}）：{meta}"
-msgstr ""
+msgstr "Processing ({source_type}): {meta}"
 
 #: pylrclibup/processor/core.py:370
 #, python-brace-format
@@ -259,17 +259,17 @@ msgstr "Scanning audio files: {extensions}"
 #: pylrclibup/processor/core.py:426
 #, fuzzy, python-brace-format
 msgid "扫描 YAML 元数据文件：{extensions}"
-msgstr "Scanning audio files: {extensions}"
+msgstr "Scanning YAML metadata files: {extensions}"
 
 #: pylrclibup/processor/core.py:439
 #, fuzzy, python-brace-format
 msgid "未找到任何支持的文件（{extensions}）"
-msgstr "No supported audio files found ({extensions})"
+msgstr "No supported files found ({extensions})"
 
 #: pylrclibup/processor/core.py:445
 #, python-brace-format
 msgid "共找到 {total} 个文件（音频：{audio}，YAML：{yaml}）"
-msgstr ""
+msgstr "Found {total} files (audio: {audio}, YAML: {yaml})"
 
 #: pylrclibup/processor/core.py:450
 #, python-brace-format
@@ -448,27 +448,27 @@ msgstr "Audio file duration invalid: {filename}"
 #: pylrclibup/model/yaml_meta.py:50
 #, python-brace-format
 msgid "YAML 文件格式错误（非字典）：{path}"
-msgstr ""
+msgstr "Invalid YAML file format (not a mapping/dict): {path}"
 
 #: pylrclibup/model/yaml_meta.py:59
 #, python-brace-format
 msgid "YAML 文件缺少必需字段（track/artist/album/duration）：{path}"
-msgstr ""
+msgstr "YAML file is missing required fields (track/artist/album/duration): {path}"
 
 #: pylrclibup/model/yaml_meta.py:67
 #, python-brace-format
 msgid "YAML 文件 duration 字段无效：{path}"
-msgstr ""
+msgstr "YAML file has an invalid duration field: {path}"
 
 #: pylrclibup/model/yaml_meta.py:82
 #, fuzzy, python-brace-format
 msgid "解析 YAML 文件失败 {path}: {error}"
-msgstr "Failed to read LRC file {path}: {error}"
+msgstr "Failed to parse YAML file {path}: {error}"
 
 #: pylrclibup/model/yaml_meta.py:85
 #, fuzzy, python-brace-format
 msgid "读取 YAML 文件异常 {path}: {error}"
-msgstr "Failed to read LRC file {path}: {error}"
+msgstr "Failed to read YAML file {path}: {error}"
 
 #: pylrclibup/api/pow.py:22
 #, python-brace-format
