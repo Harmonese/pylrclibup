@@ -1,3 +1,10 @@
+This project is deprecated and rebuilt in project `pylrclib` (see the github repository [here](https://github.com/Harmonese/pylrclib) and the PyPI release [here](https://pypi.org/project/pylrclib-cli/)). All the functions were rebuilt and improved in `pylrclib`.
+
+Install `pylrclib` by
+```bash
+pip install pylrclib-cli
+```
+
 # English
 
 # pylrclibup

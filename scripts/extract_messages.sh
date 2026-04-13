@@ -17,7 +17,7 @@ xgettext \
     --from-code=UTF-8 \
     --add-comments=TRANSLATORS \
     --package-name="pylrclibup" \
-    --package-version="0.3.0" \
+    --package-version="0.5.5" \
     --msgid-bugs-address="https://github.com/Harmonese/pylrclibup/issues" \
     $(find pylrclibup -name "*.py" -not -path "*/tests/*")
 
