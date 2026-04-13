@@ -1,4 +1,0 @@
-requests>=2.31.0
-mutagen>=1.47
-babel>=2.12.0
-pyyaml>=6.0
